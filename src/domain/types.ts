@@ -62,6 +62,7 @@ export interface Profile {
 export interface Portfolio {
   id: UUID;
   userId: UUID;
+  groupId: UUID | null;
   name: string;
   description: string | null;
   baseCurrency: CurrencyCode;
