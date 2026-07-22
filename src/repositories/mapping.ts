@@ -29,11 +29,29 @@ export const toProfile = (r: Row): Profile => ({
 export const toPortfolio = (r: Row): Portfolio => ({
   id: r.id as string,
   userId: r.user_id as string,
+  groupId: (r.group_id as string) ?? null,
   name: r.name as string,
   description: (r.description as string) ?? null,
   baseCurrency: r.base_currency as string,
   createdAt: r.created_at as string,
   updatedAt: r.updated_at as string,
+});
+
+export const toPortfolioGroup = (r: Row): import("@/domain/types").PortfolioGroup => ({
+  id: r.id as string,
+  ownerId: r.owner_id as string,
+  name: r.name as string,
+  description: (r.description as string) ?? null,
+  createdAt: r.created_at as string,
+  updatedAt: r.updated_at as string,
+});
+
+export const toExchangeRate = (r: Row): import("@/domain/types").ExchangeRate => ({
+  id: r.id as string,
+  date: r.date as string,
+  baseCurrency: r.base_currency as string,
+  quoteCurrency: r.quote_currency as string,
+  exchangeRate: Number(r.exchange_rate ?? 0),
 });
 
 export const toAsset = (r: Row): Asset => ({
