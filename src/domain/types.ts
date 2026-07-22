@@ -144,6 +144,108 @@ export interface LiabilityPayment {
   notes: string | null;
 }
 
+// ---------- Novas entidades ----------
+
+export type AllocationType =
+  | "sector"
+  | "geography"
+  | "asset_class"
+  | "esg"
+  | "factor"
+  | "currency"
+  | "custom";
+
+export type BenchmarkType =
+  | "equity_index"
+  | "bond_index"
+  | "commodity"
+  | "currency"
+  | "composite"
+  | "custom";
+
+export type DataProviderType =
+  | "market_data"
+  | "fundamentals"
+  | "reference_data"
+  | "documents"
+  | "other";
+
+export type ImportSourceType = "csv" | "xlsx" | "pdf" | "api" | "manual";
+export type ImportStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "partial";
+
+export type AssetCategoryType =
+  | "sector"
+  | "geography"
+  | "asset_class"
+  | "esg"
+  | "factor"
+  | "strategy"
+  | "custom";
+
+export interface AssetAllocation {
+  id: UUID;
+  assetId: UUID;
+  allocationType: AllocationType;
+  allocationName: string;
+  percentage: number;
+}
+
+export interface Benchmark {
+  id: UUID;
+  name: string;
+  benchmarkType: BenchmarkType;
+  ticker: string | null;
+  isin: string | null;
+  provider: string | null;
+}
+
+export interface PortfolioBenchmark {
+  id: UUID;
+  portfolioId: UUID;
+  benchmarkId: UUID;
+  weight: number;
+}
+
+export interface DataProvider {
+  id: UUID;
+  providerName: string;
+  providerType: DataProviderType;
+}
+
+export interface ImportJob {
+  id: UUID;
+  portfolioId: UUID;
+  sourceType: ImportSourceType;
+  status: ImportStatus;
+  recordsCreated: number;
+  recordsUpdated: number;
+  errorMessage: string | null;
+  startedAt: ISODateTime | null;
+  finishedAt: ISODateTime | null;
+}
+
+export interface AssetIdentifier {
+  id: UUID;
+  assetId: UUID;
+  isin: string | null;
+  ticker: string | null;
+  cusip: string | null;
+  sedol: string | null;
+  exchange: string | null;
+  currency: CurrencyCode | null;
+}
+
+export interface AssetCategory {
+  id: UUID;
+  categoryType: AssetCategoryType;
+  categoryName: string;
+}
+
 // ---------- Agregados (views compostas de leitura) ----------
 
 export interface PortfolioSnapshot {

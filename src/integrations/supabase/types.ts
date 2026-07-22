@@ -14,6 +14,115 @@ export type Database = {
   }
   public: {
     Tables: {
+      asset_allocations: {
+        Row: {
+          allocation_name: string
+          allocation_type: Database["public"]["Enums"]["allocation_type"]
+          asset_id: string
+          created_at: string
+          id: string
+          percentage: number
+          updated_at: string
+        }
+        Insert: {
+          allocation_name: string
+          allocation_type: Database["public"]["Enums"]["allocation_type"]
+          asset_id: string
+          created_at?: string
+          id?: string
+          percentage: number
+          updated_at?: string
+        }
+        Update: {
+          allocation_name?: string
+          allocation_type?: Database["public"]["Enums"]["allocation_type"]
+          asset_id?: string
+          created_at?: string
+          id?: string
+          percentage?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_allocations_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_categories: {
+        Row: {
+          category_name: string
+          category_type: Database["public"]["Enums"]["asset_category_type"]
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          category_name: string
+          category_type: Database["public"]["Enums"]["asset_category_type"]
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          category_name?: string
+          category_type?: Database["public"]["Enums"]["asset_category_type"]
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      asset_identifiers: {
+        Row: {
+          asset_id: string
+          created_at: string
+          currency: string | null
+          cusip: string | null
+          exchange: string | null
+          id: string
+          isin: string | null
+          sedol: string | null
+          ticker: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          currency?: string | null
+          cusip?: string | null
+          exchange?: string | null
+          id?: string
+          isin?: string | null
+          sedol?: string | null
+          ticker?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          currency?: string | null
+          cusip?: string | null
+          exchange?: string | null
+          id?: string
+          isin?: string | null
+          sedol?: string | null
+          ticker?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_identifiers_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_valuations: {
         Row: {
           asset_id: string
@@ -110,6 +219,113 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "assets_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benchmarks: {
+        Row: {
+          benchmark_type: Database["public"]["Enums"]["benchmark_type"]
+          created_at: string
+          id: string
+          isin: string | null
+          name: string
+          provider: string | null
+          ticker: string | null
+          updated_at: string
+        }
+        Insert: {
+          benchmark_type: Database["public"]["Enums"]["benchmark_type"]
+          created_at?: string
+          id?: string
+          isin?: string | null
+          name: string
+          provider?: string | null
+          ticker?: string | null
+          updated_at?: string
+        }
+        Update: {
+          benchmark_type?: Database["public"]["Enums"]["benchmark_type"]
+          created_at?: string
+          id?: string
+          isin?: string | null
+          name?: string
+          provider?: string | null
+          ticker?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      data_providers: {
+        Row: {
+          created_at: string
+          id: string
+          provider_name: string
+          provider_type: Database["public"]["Enums"]["data_provider_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider_name: string
+          provider_type: Database["public"]["Enums"]["data_provider_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider_name?: string
+          provider_type?: Database["public"]["Enums"]["data_provider_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      import_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          portfolio_id: string
+          records_created: number
+          records_updated: number
+          source_type: Database["public"]["Enums"]["import_source_type"]
+          started_at: string | null
+          status: Database["public"]["Enums"]["import_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          portfolio_id: string
+          records_created?: number
+          records_updated?: number
+          source_type: Database["public"]["Enums"]["import_source_type"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["import_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          portfolio_id?: string
+          records_created?: number
+          records_updated?: number
+          source_type?: Database["public"]["Enums"]["import_source_type"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["import_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_portfolio_id_fkey"
             columns: ["portfolio_id"]
             isOneToOne: false
             referencedRelation: "portfolios"
@@ -234,6 +450,48 @@ export type Database = {
             columns: ["liability_id"]
             isOneToOne: false
             referencedRelation: "liabilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portfolio_benchmarks: {
+        Row: {
+          benchmark_id: string
+          created_at: string
+          id: string
+          portfolio_id: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          benchmark_id: string
+          created_at?: string
+          id?: string
+          portfolio_id: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          benchmark_id?: string
+          created_at?: string
+          id?: string
+          portfolio_id?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_benchmarks_benchmark_id_fkey"
+            columns: ["benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "benchmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portfolio_benchmarks_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
             referencedColumns: ["id"]
           },
         ]
@@ -390,7 +648,23 @@ export type Database = {
       owns_portfolio: { Args: { _portfolio_id: string }; Returns: boolean }
     }
     Enums: {
+      allocation_type:
+        | "sector"
+        | "geography"
+        | "asset_class"
+        | "esg"
+        | "factor"
+        | "currency"
+        | "custom"
       app_role: "admin" | "user"
+      asset_category_type:
+        | "sector"
+        | "geography"
+        | "asset_class"
+        | "esg"
+        | "factor"
+        | "strategy"
+        | "custom"
       asset_type:
         | "etf"
         | "stock"
@@ -401,6 +675,21 @@ export type Database = {
         | "cash"
         | "crypto"
         | "real_estate"
+      benchmark_type:
+        | "equity_index"
+        | "bond_index"
+        | "commodity"
+        | "currency"
+        | "composite"
+        | "custom"
+      data_provider_type:
+        | "market_data"
+        | "fundamentals"
+        | "reference_data"
+        | "documents"
+        | "other"
+      import_source_type: "csv" | "xlsx" | "pdf" | "api" | "manual"
+      import_status: "pending" | "running" | "completed" | "failed" | "partial"
       interest_rate_type: "fixed" | "variable" | "mixed"
       liability_type: "mortgage" | "auto_loan" | "personal_loan" | "other"
       transaction_type:
@@ -543,7 +832,25 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      allocation_type: [
+        "sector",
+        "geography",
+        "asset_class",
+        "esg",
+        "factor",
+        "currency",
+        "custom",
+      ],
       app_role: ["admin", "user"],
+      asset_category_type: [
+        "sector",
+        "geography",
+        "asset_class",
+        "esg",
+        "factor",
+        "strategy",
+        "custom",
+      ],
       asset_type: [
         "etf",
         "stock",
@@ -555,6 +862,23 @@ export const Constants = {
         "crypto",
         "real_estate",
       ],
+      benchmark_type: [
+        "equity_index",
+        "bond_index",
+        "commodity",
+        "currency",
+        "composite",
+        "custom",
+      ],
+      data_provider_type: [
+        "market_data",
+        "fundamentals",
+        "reference_data",
+        "documents",
+        "other",
+      ],
+      import_source_type: ["csv", "xlsx", "pdf", "api", "manual"],
+      import_status: ["pending", "running", "completed", "failed", "partial"],
       interest_rate_type: ["fixed", "variable", "mixed"],
       liability_type: ["mortgage", "auto_loan", "personal_loan", "other"],
       transaction_type: [
