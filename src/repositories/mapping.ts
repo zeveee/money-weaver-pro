@@ -110,3 +110,74 @@ export const toLiabilityPayment = (r: Row): LiabilityPayment => ({
   fees: Number(r.fees ?? 0),
   notes: (r.notes as string) ?? null,
 });
+
+// ---------- Novas entidades ----------
+
+import type {
+  AssetAllocation,
+  AssetCategory,
+  AssetIdentifier,
+  Benchmark,
+  DataProvider,
+  ImportJob,
+  PortfolioBenchmark,
+} from "@/domain/types";
+
+export const toAssetAllocation = (r: Row): AssetAllocation => ({
+  id: r.id as string,
+  assetId: r.asset_id as string,
+  allocationType: r.allocation_type as AssetAllocation["allocationType"],
+  allocationName: r.allocation_name as string,
+  percentage: Number(r.percentage ?? 0),
+});
+
+export const toBenchmark = (r: Row): Benchmark => ({
+  id: r.id as string,
+  name: r.name as string,
+  benchmarkType: r.benchmark_type as Benchmark["benchmarkType"],
+  ticker: (r.ticker as string) ?? null,
+  isin: (r.isin as string) ?? null,
+  provider: (r.provider as string) ?? null,
+});
+
+export const toPortfolioBenchmark = (r: Row): PortfolioBenchmark => ({
+  id: r.id as string,
+  portfolioId: r.portfolio_id as string,
+  benchmarkId: r.benchmark_id as string,
+  weight: Number(r.weight ?? 0),
+});
+
+export const toDataProvider = (r: Row): DataProvider => ({
+  id: r.id as string,
+  providerName: r.provider_name as string,
+  providerType: r.provider_type as DataProvider["providerType"],
+});
+
+export const toImportJob = (r: Row): ImportJob => ({
+  id: r.id as string,
+  portfolioId: r.portfolio_id as string,
+  sourceType: r.source_type as ImportJob["sourceType"],
+  status: r.status as ImportJob["status"],
+  recordsCreated: Number(r.records_created ?? 0),
+  recordsUpdated: Number(r.records_updated ?? 0),
+  errorMessage: (r.error_message as string) ?? null,
+  startedAt: (r.started_at as string) ?? null,
+  finishedAt: (r.finished_at as string) ?? null,
+});
+
+export const toAssetIdentifier = (r: Row): AssetIdentifier => ({
+  id: r.id as string,
+  assetId: r.asset_id as string,
+  isin: (r.isin as string) ?? null,
+  ticker: (r.ticker as string) ?? null,
+  cusip: (r.cusip as string) ?? null,
+  sedol: (r.sedol as string) ?? null,
+  exchange: (r.exchange as string) ?? null,
+  currency: (r.currency as string) ?? null,
+});
+
+export const toAssetCategory = (r: Row): AssetCategory => ({
+  id: r.id as string,
+  categoryType: r.category_type as AssetCategory["categoryType"],
+  categoryName: r.category_name as string,
+});
