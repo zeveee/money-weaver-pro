@@ -1,0 +1,112 @@
+/**
+ * IvestWise :: Mapeadores DB <-> Domínio
+ *
+ * Isolam o formato snake_case do Supabase do modelo camelCase do domínio.
+ * Assim, se o schema mudar, só estes ficheiros precisam de ser atualizados.
+ */
+
+import type {
+  Asset,
+  AssetValuation,
+  Liability,
+  LiabilityPayment,
+  Portfolio,
+  Profile,
+  Transaction,
+} from "@/domain/types";
+
+type Row = Record<string, unknown>;
+
+export const toProfile = (r: Row): Profile => ({
+  id: r.id as string,
+  displayName: (r.display_name as string) ?? null,
+  baseCurrency: r.base_currency as string,
+  locale: r.locale as string,
+  createdAt: r.created_at as string,
+  updatedAt: r.updated_at as string,
+});
+
+export const toPortfolio = (r: Row): Portfolio => ({
+  id: r.id as string,
+  userId: r.user_id as string,
+  name: r.name as string,
+  description: (r.description as string) ?? null,
+  baseCurrency: r.base_currency as string,
+  createdAt: r.created_at as string,
+  updatedAt: r.updated_at as string,
+});
+
+export const toAsset = (r: Row): Asset => ({
+  id: r.id as string,
+  portfolioId: r.portfolio_id as string,
+  type: r.type as Asset["type"],
+  name: r.name as string,
+  ticker: (r.ticker as string) ?? null,
+  isin: (r.isin as string) ?? null,
+  currency: r.currency as string,
+  quantity: Number(r.quantity ?? 0),
+  averageCost: Number(r.average_cost ?? 0),
+  currentValue: r.current_value == null ? null : Number(r.current_value),
+  notes: (r.notes as string) ?? null,
+  metadata: (r.metadata as Record<string, unknown>) ?? {},
+  acquiredAt: (r.acquired_at as string) ?? null,
+  createdAt: r.created_at as string,
+  updatedAt: r.updated_at as string,
+});
+
+export const toTransaction = (r: Row): Transaction => ({
+  id: r.id as string,
+  assetId: r.asset_id as string,
+  type: r.type as Transaction["type"],
+  occurredAt: r.occurred_at as string,
+  quantity: Number(r.quantity ?? 0),
+  unitPrice: Number(r.unit_price ?? 0),
+  amount: Number(r.amount ?? 0),
+  currency: r.currency as string,
+  fees: Number(r.fees ?? 0),
+  taxes: Number(r.taxes ?? 0),
+  notes: (r.notes as string) ?? null,
+  metadata: (r.metadata as Record<string, unknown>) ?? {},
+});
+
+export const toValuation = (r: Row): AssetValuation => ({
+  id: r.id as string,
+  assetId: r.asset_id as string,
+  valuationDate: r.valuation_date as string,
+  unitPrice: r.unit_price == null ? null : Number(r.unit_price),
+  totalValue: Number(r.total_value ?? 0),
+  currency: r.currency as string,
+  source: (r.source as string) ?? null,
+});
+
+export const toLiability = (r: Row): Liability => ({
+  id: r.id as string,
+  portfolioId: r.portfolio_id as string,
+  type: r.type as Liability["type"],
+  name: r.name as string,
+  lender: (r.lender as string) ?? null,
+  currency: r.currency as string,
+  principalAmount: Number(r.principal_amount ?? 0),
+  outstandingBalance: Number(r.outstanding_balance ?? 0),
+  interestRate: r.interest_rate == null ? null : Number(r.interest_rate),
+  rateType: (r.rate_type as Liability["rateType"]) ?? null,
+  spread: r.spread == null ? null : Number(r.spread),
+  referenceIndex: (r.reference_index as string) ?? null,
+  monthlyPayment: r.monthly_payment == null ? null : Number(r.monthly_payment),
+  startDate: (r.start_date as string) ?? null,
+  endDate: (r.end_date as string) ?? null,
+  termMonths: r.term_months == null ? null : Number(r.term_months),
+  notes: (r.notes as string) ?? null,
+  metadata: (r.metadata as Record<string, unknown>) ?? {},
+});
+
+export const toLiabilityPayment = (r: Row): LiabilityPayment => ({
+  id: r.id as string,
+  liabilityId: r.liability_id as string,
+  paidAt: r.paid_at as string,
+  amount: Number(r.amount ?? 0),
+  principalPortion: Number(r.principal_portion ?? 0),
+  interestPortion: Number(r.interest_portion ?? 0),
+  fees: Number(r.fees ?? 0),
+  notes: (r.notes as string) ?? null,
+});
