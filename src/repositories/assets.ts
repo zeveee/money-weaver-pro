@@ -36,7 +36,7 @@ export async function createAsset(input: {
       quantity: input.quantity ?? 0,
       average_cost: input.averageCost ?? 0,
       notes: input.notes ?? null,
-      metadata: input.metadata ?? {},
+      metadata: (input.metadata ?? {}) as never,
     })
     .select("*")
     .single();
