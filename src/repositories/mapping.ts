@@ -181,3 +181,57 @@ export const toAssetCategory = (r: Row): AssetCategory => ({
   categoryType: r.category_type as AssetCategory["categoryType"],
   categoryName: r.category_name as string,
 });
+
+// ---------- Catálogos normalizados & séries temporais ----------
+
+import type {
+  AllocationTypeCatalog,
+  AllocationValue,
+  AssetPerformanceSnapshot,
+  AssetTypeCatalog,
+  BenchmarkReturn,
+  LiabilityTypeCatalog,
+} from "@/domain/types";
+
+export const toAssetTypeCatalog = (r: Row): AssetTypeCatalog => ({
+  id: r.id as string,
+  code: r.code as string,
+  name: r.name as string,
+});
+
+export const toLiabilityTypeCatalog = (r: Row): LiabilityTypeCatalog => ({
+  id: r.id as string,
+  code: r.code as string,
+  name: r.name as string,
+});
+
+export const toAllocationTypeCatalog = (r: Row): AllocationTypeCatalog => ({
+  id: r.id as string,
+  code: r.code as string,
+  name: r.name as string,
+});
+
+export const toAllocationValue = (r: Row): AllocationValue => ({
+  id: r.id as string,
+  allocationTypeId: r.allocation_type_id as string,
+  value: r.value as string,
+});
+
+export const toBenchmarkReturn = (r: Row): BenchmarkReturn => ({
+  id: r.id as string,
+  benchmarkId: r.benchmark_id as string,
+  date: r.date as string,
+  returnValue: Number(r.return_value ?? 0),
+});
+
+export const toAssetPerformanceSnapshot = (
+  r: Row,
+): AssetPerformanceSnapshot => ({
+  id: r.id as string,
+  assetId: r.asset_id as string,
+  snapshotDate: r.snapshot_date as string,
+  marketValue: Number(r.market_value ?? 0),
+  investedCapital: Number(r.invested_capital ?? 0),
+  xirr: r.xirr == null ? null : Number(r.xirr),
+  gainLoss: Number(r.gain_loss ?? 0),
+});
