@@ -54,8 +54,37 @@ auth.users 1───1 profiles
 auth.users 1───* portfolios
 portfolios 1───* assets       1───* transactions
 portfolios 1───* assets       1───* asset_valuations
+portfolios 1───* assets       1───* asset_allocations ──* allocation_values
+                                                            └─ allocation_types
+portfolios 1───* assets       1───* asset_identifiers
+portfolios 1───* assets       1───* asset_performance_snapshots
 portfolios 1───* liabilities  1───* liability_payments
+portfolios *───* benchmarks (via portfolio_benchmarks)
+benchmarks 1───* benchmark_returns
+
+Catálogos globais (leitura pública, escrita admin):
+  asset_types, liability_types, allocation_types, allocation_values,
+  benchmarks, data_providers, asset_categories
 ```
+
+### Catálogos normalizados
+
+- **asset_types** — `id, code, name`. Substitui o enum `asset_type` por
+  tabela extensível sem migração.
+- **liability_types** — `id, code, name`. Análogo para passivos.
+- **allocation_types** — `id, code, name` (Sector, Geography, ESG,
+  MarketCap, Factor, ...).
+- **allocation_values** — `allocation_type_id, value`. Enumera valores
+  válidos por tipo (Sector → Technology, Energy, ...).
+
+### Séries temporais
+
+- **benchmark_returns** — `benchmark_id, date, return_value`. Histórico
+  de rentabilidades por benchmark.
+- **asset_performance_snapshots** — `asset_id, snapshot_date,
+  market_value, invested_capital, xirr, gain_loss`. Métricas materializadas
+  para análise histórica sem recomputar tudo.
+
 
 ### Tipos suportados
 

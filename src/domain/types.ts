@@ -246,6 +246,57 @@ export interface AssetCategory {
   categoryName: string;
 }
 
+// ---------- Catálogos normalizados ----------
+
+/** Catálogo global de tipos de ativos (ETF, Stock, Bond, ...). */
+export interface AssetTypeCatalog {
+  id: UUID;
+  code: string; // ex.: "etf", "stock"
+  name: string; // ex.: "ETF", "Stock"
+}
+
+/** Catálogo global de tipos de passivos (Mortgage, Auto Loan, ...). */
+export interface LiabilityTypeCatalog {
+  id: UUID;
+  code: string;
+  name: string;
+}
+
+/** Tipos de alocação configuráveis (Sector, Geography, ESG, ...). */
+export interface AllocationTypeCatalog {
+  id: UUID;
+  code: string;
+  name: string;
+}
+
+/** Valores possíveis para cada allocation_type (ex.: Sector → Technology). */
+export interface AllocationValue {
+  id: UUID;
+  allocationTypeId: UUID;
+  value: string;
+}
+
+// ---------- Séries temporais ----------
+
+/** Rentabilidade histórica de um benchmark, por data. */
+export interface BenchmarkReturn {
+  id: UUID;
+  benchmarkId: UUID;
+  date: ISODate;
+  returnValue: number; // ex.: 0.0123 para +1,23%
+}
+
+/** Snapshot de métricas calculadas para um ativo numa dada data. */
+export interface AssetPerformanceSnapshot {
+  id: UUID;
+  assetId: UUID;
+  snapshotDate: ISODate;
+  marketValue: number;
+  investedCapital: number;
+  xirr: number | null;
+  gainLoss: number;
+}
+
 // ---------- Agregados (views compostas de leitura) ----------
 
 export interface PortfolioSnapshot {
