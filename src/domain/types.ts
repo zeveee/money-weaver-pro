@@ -297,6 +297,27 @@ export interface AssetPerformanceSnapshot {
   gainLoss: number;
 }
 
+// ---------- Agrupamento e FX ----------
+
+/** Grupo lógico de carteiras (ex.: Reforma, Família, Investimentos). */
+export interface PortfolioGroup {
+  id: UUID;
+  ownerId: UUID;
+  name: string;
+  description: string | null;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+/** Taxa de câmbio entre duas moedas numa data (ex.: EUR/USD). */
+export interface ExchangeRate {
+  id: UUID;
+  date: ISODate;
+  baseCurrency: CurrencyCode;
+  quoteCurrency: CurrencyCode;
+  exchangeRate: number;
+}
+
 // ---------- Agregados (views compostas de leitura) ----------
 
 export interface PortfolioSnapshot {
