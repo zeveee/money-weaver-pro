@@ -51,6 +51,7 @@ desde o início para múltiplos utilizadores e futura comercialização SaaS.
 
 ```text
 auth.users 1───1 profiles
+auth.users 1───* portfolio_groups 1───* portfolios
 auth.users 1───* portfolios
 portfolios 1───* assets       1───* transactions
 portfolios 1───* assets       1───* asset_valuations
@@ -62,9 +63,12 @@ portfolios 1───* liabilities  1───* liability_payments
 portfolios *───* benchmarks (via portfolio_benchmarks)
 benchmarks 1───* benchmark_returns
 
+exchange_rates (base_currency, quote_currency, date) — catálogo global de FX
+  usado para consolidar carteiras multi-moeda numa moeda de referência.
+
 Catálogos globais (leitura pública, escrita admin):
   asset_types, liability_types, allocation_types, allocation_values,
-  benchmarks, data_providers, asset_categories
+  benchmarks, data_providers, asset_categories, exchange_rates
 ```
 
 ### Catálogos normalizados
