@@ -14,35 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      allocation_types: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      allocation_values: {
+        Row: {
+          allocation_type_id: string
+          created_at: string
+          id: string
+          value: string
+        }
+        Insert: {
+          allocation_type_id: string
+          created_at?: string
+          id?: string
+          value: string
+        }
+        Update: {
+          allocation_type_id?: string
+          created_at?: string
+          id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allocation_values_allocation_type_id_fkey"
+            columns: ["allocation_type_id"]
+            isOneToOne: false
+            referencedRelation: "allocation_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_allocations: {
         Row: {
-          allocation_name: string
-          allocation_type: Database["public"]["Enums"]["allocation_type"]
+          allocation_value_id: string
           asset_id: string
           created_at: string
           id: string
           percentage: number
-          updated_at: string
         }
         Insert: {
-          allocation_name: string
-          allocation_type: Database["public"]["Enums"]["allocation_type"]
+          allocation_value_id: string
           asset_id: string
           created_at?: string
           id?: string
           percentage: number
-          updated_at?: string
         }
         Update: {
-          allocation_name?: string
-          allocation_type?: Database["public"]["Enums"]["allocation_type"]
+          allocation_value_id?: string
           asset_id?: string
           created_at?: string
           id?: string
           percentage?: number
-          updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "asset_allocations_allocation_value_id_fkey"
+            columns: ["allocation_value_id"]
+            isOneToOne: false
+            referencedRelation: "allocation_values"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "asset_allocations_asset_id_fkey"
             columns: ["asset_id"]
@@ -58,21 +109,18 @@ export type Database = {
           category_type: Database["public"]["Enums"]["asset_category_type"]
           created_at: string
           id: string
-          updated_at: string
         }
         Insert: {
           category_name: string
           category_type: Database["public"]["Enums"]["asset_category_type"]
           created_at?: string
           id?: string
-          updated_at?: string
         }
         Update: {
           category_name?: string
           category_type?: Database["public"]["Enums"]["asset_category_type"]
           created_at?: string
           id?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -87,7 +135,6 @@ export type Database = {
           isin: string | null
           sedol: string | null
           ticker: string | null
-          updated_at: string
         }
         Insert: {
           asset_id: string
@@ -99,7 +146,6 @@ export type Database = {
           isin?: string | null
           sedol?: string | null
           ticker?: string | null
-          updated_at?: string
         }
         Update: {
           asset_id?: string
@@ -111,7 +157,6 @@ export type Database = {
           isin?: string | null
           sedol?: string | null
           ticker?: string | null
-          updated_at?: string
         }
         Relationships: [
           {
@@ -122,6 +167,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      asset_performance_snapshots: {
+        Row: {
+          asset_id: string
+          created_at: string
+          gain_loss: number
+          id: string
+          invested_capital: number
+          market_value: number
+          snapshot_date: string
+          xirr: number | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          gain_loss: number
+          id?: string
+          invested_capital: number
+          market_value: number
+          snapshot_date: string
+          xirr?: number | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          gain_loss?: number
+          id?: string
+          invested_capital?: number
+          market_value?: number
+          snapshot_date?: string
+          xirr?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_performance_snapshots_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_types: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       asset_valuations: {
         Row: {
@@ -142,7 +249,7 @@ export type Database = {
           source?: string | null
           total_value: number
           unit_price?: number | null
-          valuation_date?: string
+          valuation_date: string
         }
         Update: {
           asset_id?: string
@@ -226,6 +333,38 @@ export type Database = {
           },
         ]
       }
+      benchmark_returns: {
+        Row: {
+          benchmark_id: string
+          created_at: string
+          date: string
+          id: string
+          return_value: number
+        }
+        Insert: {
+          benchmark_id: string
+          created_at?: string
+          date: string
+          id?: string
+          return_value: number
+        }
+        Update: {
+          benchmark_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          return_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_returns_benchmark_id_fkey"
+            columns: ["benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "benchmarks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       benchmarks: {
         Row: {
           benchmark_type: Database["public"]["Enums"]["benchmark_type"]
@@ -235,7 +374,6 @@ export type Database = {
           name: string
           provider: string | null
           ticker: string | null
-          updated_at: string
         }
         Insert: {
           benchmark_type: Database["public"]["Enums"]["benchmark_type"]
@@ -245,7 +383,6 @@ export type Database = {
           name: string
           provider?: string | null
           ticker?: string | null
-          updated_at?: string
         }
         Update: {
           benchmark_type?: Database["public"]["Enums"]["benchmark_type"]
@@ -255,7 +392,6 @@ export type Database = {
           name?: string
           provider?: string | null
           ticker?: string | null
-          updated_at?: string
         }
         Relationships: []
       }
@@ -265,21 +401,45 @@ export type Database = {
           id: string
           provider_name: string
           provider_type: Database["public"]["Enums"]["data_provider_type"]
-          updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
           provider_name: string
           provider_type: Database["public"]["Enums"]["data_provider_type"]
-          updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           provider_name?: string
           provider_type?: Database["public"]["Enums"]["data_provider_type"]
-          updated_at?: string
+        }
+        Relationships: []
+      }
+      exchange_rates: {
+        Row: {
+          base_currency: string
+          created_at: string
+          date: string
+          exchange_rate: number
+          id: string
+          quote_currency: string
+        }
+        Insert: {
+          base_currency: string
+          created_at?: string
+          date: string
+          exchange_rate: number
+          id?: string
+          quote_currency: string
+        }
+        Update: {
+          base_currency?: string
+          created_at?: string
+          date?: string
+          exchange_rate?: number
+          id?: string
+          quote_currency?: string
         }
         Relationships: []
       }
@@ -289,6 +449,7 @@ export type Database = {
           error_message: string | null
           finished_at: string | null
           id: string
+          metadata: Json
           portfolio_id: string
           records_created: number
           records_updated: number
@@ -302,6 +463,7 @@ export type Database = {
           error_message?: string | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
           portfolio_id: string
           records_created?: number
           records_updated?: number
@@ -315,6 +477,7 @@ export type Database = {
           error_message?: string | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
           portfolio_id?: string
           records_created?: number
           records_updated?: number
@@ -369,7 +532,7 @@ export type Database = {
           notes?: string | null
           outstanding_balance?: number
           portfolio_id: string
-          principal_amount?: number
+          principal_amount: number
           rate_type?: Database["public"]["Enums"]["interest_rate_type"] | null
           reference_index?: string | null
           spread?: number | null
@@ -423,14 +586,14 @@ export type Database = {
           principal_portion: number
         }
         Insert: {
-          amount?: number
+          amount: number
           created_at?: string
           fees?: number
           id?: string
           interest_portion?: number
           liability_id: string
           notes?: string | null
-          paid_at?: string
+          paid_at: string
           principal_portion?: number
         }
         Update: {
@@ -454,13 +617,33 @@ export type Database = {
           },
         ]
       }
+      liability_types: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       portfolio_benchmarks: {
         Row: {
           benchmark_id: string
           created_at: string
           id: string
           portfolio_id: string
-          updated_at: string
           weight: number
         }
         Insert: {
@@ -468,7 +651,6 @@ export type Database = {
           created_at?: string
           id?: string
           portfolio_id: string
-          updated_at?: string
           weight?: number
         }
         Update: {
@@ -476,7 +658,6 @@ export type Database = {
           created_at?: string
           id?: string
           portfolio_id?: string
-          updated_at?: string
           weight?: number
         }
         Relationships: [
@@ -496,11 +677,39 @@ export type Database = {
           },
         ]
       }
+      portfolio_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       portfolios: {
         Row: {
           base_currency: string
           created_at: string
           description: string | null
+          group_id: string | null
           id: string
           name: string
           updated_at: string
@@ -510,6 +719,7 @@ export type Database = {
           base_currency?: string
           created_at?: string
           description?: string | null
+          group_id?: string | null
           id?: string
           name: string
           updated_at?: string
@@ -519,12 +729,21 @@ export type Database = {
           base_currency?: string
           created_at?: string
           description?: string | null
+          group_id?: string | null
           id?: string
           name?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "portfolios_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -579,7 +798,7 @@ export type Database = {
           id?: string
           metadata?: Json
           notes?: string | null
-          occurred_at?: string
+          occurred_at: string
           quantity?: number
           taxes?: number
           type: Database["public"]["Enums"]["transaction_type"]
@@ -675,6 +894,7 @@ export type Database = {
         | "cash"
         | "crypto"
         | "real_estate"
+        | "commodity"
       benchmark_type:
         | "equity_index"
         | "bond_index"
@@ -861,6 +1081,7 @@ export const Constants = {
         "cash",
         "crypto",
         "real_estate",
+        "commodity",
       ],
       benchmark_type: [
         "equity_index",
