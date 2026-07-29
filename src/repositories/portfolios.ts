@@ -25,6 +25,7 @@ export async function createPortfolio(input: {
   name: string;
   description?: string | null;
   baseCurrency?: string;
+  groupId?: string | null;
 }): Promise<Portfolio> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error("Not authenticated");
@@ -35,7 +36,32 @@ export async function createPortfolio(input: {
       name: input.name,
       description: input.description ?? null,
       base_currency: input.baseCurrency ?? "EUR",
+      group_id: input.groupId ?? null,
     })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return toPortfolio(data);
+}
+
+export async function updatePortfolio(
+  id: string,
+  patch: {
+    name?: string;
+    description?: string | null;
+    baseCurrency?: string;
+    groupId?: string | null;
+  },
+): Promise<Portfolio> {
+  const { data, error } = await supabase
+    .from("portfolios")
+    .update({
+      ...(patch.name !== undefined ? { name: patch.name } : {}),
+      ...(patch.description !== undefined ? { description: patch.description } : {}),
+      ...(patch.baseCurrency !== undefined ? { base_currency: patch.baseCurrency } : {}),
+      ...(patch.groupId !== undefined ? { group_id: patch.groupId } : {}),
+    })
+    .eq("id", id)
     .select("*")
     .single();
   if (error) throw error;
