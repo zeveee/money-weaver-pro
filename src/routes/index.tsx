@@ -33,24 +33,22 @@ function Index() {
           Gestão patrimonial &amp; análise de investimentos
         </h1>
         <p className="mt-4 text-muted-foreground">
-          Fundações prontas. Backend, modelo de dados e camadas de arquitetura
-          definidos.
+          Gere grupos de carteiras e carteiras. Fundações prontas para evolução SaaS.
         </p>
         <div className="mt-6 flex gap-3">
-          <Link to="/auth" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+          <Link
+            to="/auth"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
             Entrar
           </Link>
-          <Link to="/app" className="inline-flex items-center justify-center rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent">
+          <Link
+            to="/app"
+            className="inline-flex items-center justify-center rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent"
+          >
             Abrir aplicação
           </Link>
         </div>
-      </header>
-          Gestão patrimonial &amp; análise de investimentos
-        </h1>
-        <p className="mt-4 text-muted-foreground">
-          Fundações prontas. Backend, modelo de dados e camadas de arquitetura
-          definidos. Interface a construir nos próximos passos.
-        </p>
       </header>
 
       <section className="space-y-3">
@@ -59,40 +57,9 @@ function Index() {
           <li><code>src/domain</code> — tipos partilhados (modelo de negócio)</li>
           <li><code>src/services</code> — lógica financeira pura, sem I/O</li>
           <li><code>src/repositories</code> — única fronteira com a base de dados</li>
-          <li><code>src/routes</code> — apresentação (a construir)</li>
+          <li><code>src/routes</code> — apresentação</li>
         </ul>
       </section>
-
-      <section className="mt-8 space-y-3">
-        <h2 className="text-lg font-medium">Entidades</h2>
-        <p className="text-sm text-muted-foreground">
-          <strong>profiles</strong> · <strong>portfolios</strong> ·{" "}
-          <strong>assets</strong> · <strong>transactions</strong> ·{" "}
-          <strong>asset_valuations</strong> · <strong>liabilities</strong> ·{" "}
-          <strong>liability_payments</strong> · <strong>user_roles</strong>
-        </p>
-      </section>
-
-      <section className="mt-8 space-y-3">
-        <h2 className="text-lg font-medium">Ativos suportados</h2>
-        <p className="text-sm text-muted-foreground">
-          ETF, Ações, Fundos, Seguros de Capitalização, PPR, Obrigações,
-          Liquidez, Criptoativos, Imobiliário.
-        </p>
-      </section>
-
-      <section className="mt-8 space-y-3">
-        <h2 className="text-lg font-medium">Passivos suportados</h2>
-        <p className="text-sm text-muted-foreground">
-          Crédito Habitação, Crédito Automóvel, Crédito Pessoal, Outros
-          Passivos.
-        </p>
-      </section>
-
-      <footer className="mt-12 text-xs text-muted-foreground">
-        Ver <code>ARCHITECTURE.md</code> para detalhes completos do modelo,
-        relações e RLS.
-      </footer>
     </main>
   );
 }
