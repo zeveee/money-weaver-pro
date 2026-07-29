@@ -34,6 +34,21 @@ function Index() {
         </h1>
         <p className="mt-4 text-muted-foreground">
           Fundações prontas. Backend, modelo de dados e camadas de arquitetura
+          definidos.
+        </p>
+        <div className="mt-6 flex gap-3">
+          <Link to="/auth" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            Entrar
+          </Link>
+          <Link to="/app" className="inline-flex items-center justify-center rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent">
+            Abrir aplicação
+          </Link>
+        </div>
+      </header>
+          Gestão patrimonial &amp; análise de investimentos
+        </h1>
+        <p className="mt-4 text-muted-foreground">
+          Fundações prontas. Backend, modelo de dados e camadas de arquitetura
           definidos. Interface a construir nos próximos passos.
         </p>
       </header>
