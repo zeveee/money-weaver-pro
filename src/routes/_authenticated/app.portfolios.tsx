@@ -90,11 +90,23 @@ function PortfoliosPage() {
           {portfolios.map((p) => (
             <Card key={p.id}>
               <CardHeader>
-                <CardTitle className="text-base">{p.name}</CardTitle>
+                <CardTitle className="text-base">
+                  <Link to="/app/portfolio/$portfolioId" params={{ portfolioId: p.id }} className="hover:underline">
+                    {p.name}
+                  </Link>
+                </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  {p.baseCurrency} · Grupo: {groupName(p.groupId)}
+                  {p.baseCurrency} · Grupo:{" "}
+                  {p.groupId ? (
+                    <Link to="/app/group/$groupId" params={{ groupId: p.groupId }} className="hover:underline">
+                      {groupName(p.groupId)}
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
                 </p>
               </CardHeader>
+
               <CardContent className="space-y-3">
                 {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
                 <div className="flex gap-2">
