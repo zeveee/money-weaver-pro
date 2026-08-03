@@ -82,9 +82,16 @@ function GroupsPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {groups.map((g) => (
             <Card key={g.id}>
-              <CardHeader><CardTitle className="text-base">{g.name}</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  <Link to="/app/group/$groupId" params={{ groupId: g.id }} className="hover:underline">
+                    {g.name}
+                  </Link>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-3">
                 {g.description && <p className="text-sm text-muted-foreground">{g.description}</p>}
+
                 <div className="flex gap-2">
                   <Dialog open={editing?.id === g.id} onOpenChange={(o) => setEditing(o ? g : null)}>
                     <DialogTrigger asChild><Button variant="outline" size="sm">Editar</Button></DialogTrigger>
