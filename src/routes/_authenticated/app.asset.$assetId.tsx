@@ -6,6 +6,8 @@ import { getAssetFields, getAssetProfile } from "@/domain/asset-profiles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
+import { TransactionsSection } from "@/components/transactions/transactions-section";
+
 
 export const Route = createFileRoute("/_authenticated/app/asset/$assetId")({
   component: AssetDetailPage,
@@ -85,30 +87,23 @@ function AssetDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Transações</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Fonte de verdade para quantidades e custo médio. Ainda por implementar.</p>
-            <div className="flex flex-wrap gap-1">
-              {profile.transactionTypes.map((t) => (
-                <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>
-              ))}
-            </div>
-            {profile.futureTransactionTypes && (
-              <p className="text-xs">Extensões futuras: {profile.futureTransactionTypes.join(", ")}</p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-base">Valorações</CardTitle></CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            {profile.supportsValuations
-              ? "Estado atual do ativo virá da última valoração registada. Ainda por implementar."
-              : "Este tipo de ativo não usa valorações."}
-          </CardContent>
-        </Card>
-      </div>
+      <TransactionsSection asset={asset} />
+
+      {profile.futureTransactionTypes && (
+        <p className="text-xs text-muted-foreground">
+          Extensões futuras de transações: {profile.futureTransactionTypes.join(", ")}
+        </p>
+      )}
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Valorações</CardTitle></CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          {profile.supportsValuations
+            ? "Estado atual do ativo virá da última valoração registada. Ainda por implementar."
+            : "Este tipo de ativo não usa valorações."}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
