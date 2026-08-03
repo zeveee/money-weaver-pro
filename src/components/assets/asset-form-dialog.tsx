@@ -200,7 +200,7 @@ function FieldControl({
           }
         />
       )}
-      {field.help && field.kind !== "checkbox" && <p className="text-xs text-muted-foreground">{field.help}</p>}
+      {field.help && <p className="text-xs text-muted-foreground">{field.help}</p>}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppPortfoliosRouteImport } from './routes/_authenticated/app.portfolios'
 import { Route as AuthenticatedAppPortfolioPortfolioIdRouteImport } from './routes/_authenticated/app.portfolio.$portfolioId'
 import { Route as AuthenticatedAppGroupGroupIdRouteImport } from './routes/_authenticated/app.group.$groupId'
+import { Route as AuthenticatedAppAssetAssetIdRouteImport } from './routes/_authenticated/app.asset.$assetId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -54,12 +55,19 @@ const AuthenticatedAppGroupGroupIdRoute =
     path: '/app/group/$groupId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAppAssetAssetIdRoute =
+  AuthenticatedAppAssetAssetIdRouteImport.update({
+    id: '/app/asset/$assetId',
+    path: '/app/asset/$assetId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app/portfolios': typeof AuthenticatedAppPortfoliosRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/asset/$assetId': typeof AuthenticatedAppAssetAssetIdRoute
   '/app/group/$groupId': typeof AuthenticatedAppGroupGroupIdRoute
   '/app/portfolio/$portfolioId': typeof AuthenticatedAppPortfolioPortfolioIdRoute
 }
@@ -68,6 +76,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/app/portfolios': typeof AuthenticatedAppPortfoliosRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/asset/$assetId': typeof AuthenticatedAppAssetAssetIdRoute
   '/app/group/$groupId': typeof AuthenticatedAppGroupGroupIdRoute
   '/app/portfolio/$portfolioId': typeof AuthenticatedAppPortfolioPortfolioIdRoute
 }
@@ -78,6 +87,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/app/portfolios': typeof AuthenticatedAppPortfoliosRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/asset/$assetId': typeof AuthenticatedAppAssetAssetIdRoute
   '/_authenticated/app/group/$groupId': typeof AuthenticatedAppGroupGroupIdRoute
   '/_authenticated/app/portfolio/$portfolioId': typeof AuthenticatedAppPortfolioPortfolioIdRoute
 }
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app/portfolios'
     | '/app/'
+    | '/app/asset/$assetId'
     | '/app/group/$groupId'
     | '/app/portfolio/$portfolioId'
   fileRoutesByTo: FileRoutesByTo
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app/portfolios'
     | '/app'
+    | '/app/asset/$assetId'
     | '/app/group/$groupId'
     | '/app/portfolio/$portfolioId'
   id:
@@ -105,6 +117,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/app/portfolios'
     | '/_authenticated/app/'
+    | '/_authenticated/app/asset/$assetId'
     | '/_authenticated/app/group/$groupId'
     | '/_authenticated/app/portfolio/$portfolioId'
   fileRoutesById: FileRoutesById
@@ -166,12 +179,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppGroupGroupIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/asset/$assetId': {
+      id: '/_authenticated/app/asset/$assetId'
+      path: '/app/asset/$assetId'
+      fullPath: '/app/asset/$assetId'
+      preLoaderRoute: typeof AuthenticatedAppAssetAssetIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppPortfoliosRoute: typeof AuthenticatedAppPortfoliosRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppAssetAssetIdRoute: typeof AuthenticatedAppAssetAssetIdRoute
   AuthenticatedAppGroupGroupIdRoute: typeof AuthenticatedAppGroupGroupIdRoute
   AuthenticatedAppPortfolioPortfolioIdRoute: typeof AuthenticatedAppPortfolioPortfolioIdRoute
 }
@@ -179,6 +200,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppPortfoliosRoute: AuthenticatedAppPortfoliosRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppAssetAssetIdRoute: AuthenticatedAppAssetAssetIdRoute,
   AuthenticatedAppGroupGroupIdRoute: AuthenticatedAppGroupGroupIdRoute,
   AuthenticatedAppPortfolioPortfolioIdRoute:
     AuthenticatedAppPortfolioPortfolioIdRoute,
@@ -195,13 +217,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
