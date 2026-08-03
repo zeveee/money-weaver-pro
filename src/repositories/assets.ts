@@ -2,6 +2,17 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Asset, AssetType } from "@/domain/types";
 import { toAsset } from "./mapping";
 
+export interface AssetWriteInput {
+  type: AssetType;
+  name: string;
+  ticker?: string | null;
+  isin?: string | null;
+  currency?: string;
+  notes?: string | null;
+  acquiredAt?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
 export async function listAssets(portfolioId: string): Promise<Asset[]> {
   const { data, error } = await supabase
     .from("assets")
@@ -12,18 +23,15 @@ export async function listAssets(portfolioId: string): Promise<Asset[]> {
   return (data ?? []).map(toAsset);
 }
 
-export async function createAsset(input: {
-  portfolioId: string;
-  type: AssetType;
-  name: string;
-  ticker?: string | null;
-  isin?: string | null;
-  currency?: string;
-  quantity?: number;
-  averageCost?: number;
-  notes?: string | null;
-  metadata?: Record<string, unknown>;
-}): Promise<Asset> {
+export async function getAsset(id: string): Promise<Asset | null> {
+  const { data, error } = await supabase.from("assets").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? toAsset(data) : null;
+}
+
+export async function createAsset(
+  input: AssetWriteInput & { portfolioId: string },
+): Promise<Asset> {
   const { data, error } = await supabase
     .from("assets")
     .insert({
@@ -33,11 +41,30 @@ export async function createAsset(input: {
       ticker: input.ticker ?? null,
       isin: input.isin ?? null,
       currency: input.currency ?? "EUR",
-      quantity: input.quantity ?? 0,
-      average_cost: input.averageCost ?? 0,
       notes: input.notes ?? null,
+      acquired_at: input.acquiredAt ?? null,
       metadata: (input.metadata ?? {}) as never,
     })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return toAsset(data);
+}
+
+export async function updateAsset(id: string, input: AssetWriteInput): Promise<Asset> {
+  const { data, error } = await supabase
+    .from("assets")
+    .update({
+      type: input.type,
+      name: input.name,
+      ticker: input.ticker ?? null,
+      isin: input.isin ?? null,
+      currency: input.currency ?? "EUR",
+      notes: input.notes ?? null,
+      acquired_at: input.acquiredAt ?? null,
+      metadata: (input.metadata ?? {}) as never,
+    })
+    .eq("id", id)
     .select("*")
     .single();
   if (error) throw error;

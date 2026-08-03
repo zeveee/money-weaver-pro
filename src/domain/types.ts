@@ -24,7 +24,8 @@ export type AssetType =
   | "bond"
   | "cash"
   | "crypto"
-  | "real_estate";
+  | "real_estate"
+  | "commodity";
 
 export type LiabilityType =
   | "mortgage"
