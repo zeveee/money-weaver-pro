@@ -6,6 +6,8 @@ import { getAssetFields, getAssetProfile } from "@/domain/asset-profiles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
+import { TransactionsSection } from "@/components/transactions/transactions-section";
+
 
 export const Route = createFileRoute("/_authenticated/app/asset/$assetId")({
   component: AssetDetailPage,
