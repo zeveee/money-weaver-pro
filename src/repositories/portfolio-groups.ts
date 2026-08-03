@@ -55,3 +55,13 @@ export async function deletePortfolioGroup(id: string): Promise<void> {
   const { error } = await supabase.from("portfolio_groups").delete().eq("id", id);
   if (error) throw error;
 }
+
+export async function getPortfolioGroup(id: string): Promise<PortfolioGroup | null> {
+  const { data, error } = await supabase
+    .from("portfolio_groups")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toPortfolioGroup(data) : null;
+}

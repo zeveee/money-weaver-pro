@@ -72,3 +72,13 @@ export async function deletePortfolio(id: string): Promise<void> {
   const { error } = await supabase.from("portfolios").delete().eq("id", id);
   if (error) throw error;
 }
+
+export async function listPortfoliosByGroup(groupId: string): Promise<Portfolio[]> {
+  const { data, error } = await supabase
+    .from("portfolios")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(toPortfolio);
+}
