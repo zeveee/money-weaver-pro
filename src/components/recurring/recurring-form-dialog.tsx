@@ -171,6 +171,49 @@ export function RecurringFormDialog({
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="r-mode">Modo de execução *</Label>
+          <Select
+            value={executionMode}
+            onValueChange={(v) => setExecutionMode(v as RecurrenceExecutionMode)}
+          >
+            <SelectTrigger id="r-mode"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MODE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {executionMode === "manual"
+              ? "As ocorrências previstas ficam pendentes até serem confirmadas."
+              : "As transações previstas são criadas automaticamente nas datas devidas."}
+          </p>
+        </div>
+
+        {isNew && (
+          <div className="space-y-2 rounded-md border p-3">
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="r-backfill"
+                checked={backfill}
+                onCheckedChange={(c) => setBackfill(Boolean(c))}
+              />
+              <Label htmlFor="r-backfill">
+                Gerar histórico desde a data de início
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {backfill
+                ? preview.length === 0
+                  ? "Nenhuma ocorrência prevista até hoje."
+                  : `${preview.length} ocorrências entre ${preview[0]} e ${preview[preview.length - 1]} · total ${money(previewTotal, currency)}. Serão criadas transações reais, que contam para capital investido, rentabilidade e XIRR.`
+                : "Sem histórico: a regra passa a valer apenas para o futuro."}
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-2">
+
           <Label htmlFor="r-notes">Notas</Label>
           <Textarea id="r-notes" value={notes} maxLength={1000} onChange={(e) => setNotes(e.target.value)} />
         </div>
