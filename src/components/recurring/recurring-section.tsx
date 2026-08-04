@@ -163,6 +163,7 @@ export function RecurringSection({ asset }: { asset: Asset }) {
           <ul className="divide-y rounded-md border">
             {rules.map((r) => {
               const pending = pendingOccurrences(r, transactions);
+              const dismissed = dismissedDates(r);
               const next = r.isActive ? nextOccurrence(r, todayISO()) : null;
               return (
                 <li key={r.id} className="space-y-3 p-3">
