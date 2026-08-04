@@ -172,6 +172,7 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">{getTransactionLabel(asset.type, t.type)}</Badge>
+                      {t.recurringTransactionId && <Badge variant="outline">Recorrente</Badge>}
                       <span className="text-xs text-muted-foreground">
                         {dateLabel(t.occurredAt)}
                       </span>

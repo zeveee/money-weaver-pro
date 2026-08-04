@@ -780,9 +780,11 @@ export type Database = {
           currency: string
           day_of_month: number | null
           end_date: string | null
+          execution_mode: Database["public"]["Enums"]["recurrence_execution_mode"]
           frequency: Database["public"]["Enums"]["recurrence_frequency"]
           id: string
           is_active: boolean
+          last_generated_on: string | null
           metadata: Json
           notes: string | null
           start_date: string
@@ -796,9 +798,11 @@ export type Database = {
           currency?: string
           day_of_month?: number | null
           end_date?: string | null
+          execution_mode?: Database["public"]["Enums"]["recurrence_execution_mode"]
           frequency?: Database["public"]["Enums"]["recurrence_frequency"]
           id?: string
           is_active?: boolean
+          last_generated_on?: string | null
           metadata?: Json
           notes?: string | null
           start_date: string
@@ -812,9 +816,11 @@ export type Database = {
           currency?: string
           day_of_month?: number | null
           end_date?: string | null
+          execution_mode?: Database["public"]["Enums"]["recurrence_execution_mode"]
           frequency?: Database["public"]["Enums"]["recurrence_frequency"]
           id?: string
           is_active?: boolean
+          last_generated_on?: string | null
           metadata?: Json
           notes?: string | null
           start_date?: string
@@ -981,6 +987,7 @@ export type Database = {
       import_status: "pending" | "running" | "completed" | "failed" | "partial"
       interest_rate_type: "fixed" | "variable" | "mixed"
       liability_type: "mortgage" | "auto_loan" | "personal_loan" | "other"
+      recurrence_execution_mode: "manual" | "automatic"
       recurrence_frequency:
         | "weekly"
         | "monthly"
@@ -1177,6 +1184,7 @@ export const Constants = {
       import_status: ["pending", "running", "completed", "failed", "partial"],
       interest_rate_type: ["fixed", "variable", "mixed"],
       liability_type: ["mortgage", "auto_loan", "personal_loan", "other"],
+      recurrence_execution_mode: ["manual", "automatic"],
       recurrence_frequency: [
         "weekly",
         "monthly",

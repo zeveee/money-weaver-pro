@@ -101,6 +101,9 @@ export const toRecurringTransaction = (
   startDate: r.start_date as string,
   endDate: (r.end_date as string) ?? null,
   isActive: Boolean(r.is_active),
+  executionMode:
+    (r.execution_mode as import("@/domain/types").RecurrenceExecutionMode) ?? "manual",
+  lastGeneratedOn: (r.last_generated_on as string) ?? null,
   notes: (r.notes as string) ?? null,
   metadata: (r.metadata as Record<string, unknown>) ?? {},
   createdAt: r.created_at as string,
