@@ -772,6 +772,65 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_transactions: {
+        Row: {
+          amount: number
+          asset_id: string
+          created_at: string
+          currency: string
+          day_of_month: number | null
+          end_date: string | null
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          id: string
+          is_active: boolean
+          metadata: Json
+          notes: string | null
+          start_date: string
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          created_at?: string
+          currency?: string
+          day_of_month?: number | null
+          end_date?: string | null
+          frequency?: Database["public"]["Enums"]["recurrence_frequency"]
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          notes?: string | null
+          start_date: string
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          created_at?: string
+          currency?: string
+          day_of_month?: number | null
+          end_date?: string | null
+          frequency?: Database["public"]["Enums"]["recurrence_frequency"]
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          notes?: string | null
+          start_date?: string
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_transactions_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -784,6 +843,7 @@ export type Database = {
           notes: string | null
           occurred_at: string
           quantity: number
+          recurring_transaction_id: string | null
           taxes: number
           type: Database["public"]["Enums"]["transaction_type"]
           unit_price: number
@@ -800,6 +860,7 @@ export type Database = {
           notes?: string | null
           occurred_at: string
           quantity?: number
+          recurring_transaction_id?: string | null
           taxes?: number
           type: Database["public"]["Enums"]["transaction_type"]
           unit_price?: number
@@ -816,6 +877,7 @@ export type Database = {
           notes?: string | null
           occurred_at?: string
           quantity?: number
+          recurring_transaction_id?: string | null
           taxes?: number
           type?: Database["public"]["Enums"]["transaction_type"]
           unit_price?: number
@@ -827,6 +889,13 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_recurring_transaction_id_fkey"
+            columns: ["recurring_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -912,6 +981,12 @@ export type Database = {
       import_status: "pending" | "running" | "completed" | "failed" | "partial"
       interest_rate_type: "fixed" | "variable" | "mixed"
       liability_type: "mortgage" | "auto_loan" | "personal_loan" | "other"
+      recurrence_frequency:
+        | "weekly"
+        | "monthly"
+        | "quarterly"
+        | "semiannual"
+        | "annual"
       transaction_type:
         | "buy"
         | "sell"
@@ -1102,6 +1177,13 @@ export const Constants = {
       import_status: ["pending", "running", "completed", "failed", "partial"],
       interest_rate_type: ["fixed", "variable", "mixed"],
       liability_type: ["mortgage", "auto_loan", "personal_loan", "other"],
+      recurrence_frequency: [
+        "weekly",
+        "monthly",
+        "quarterly",
+        "semiannual",
+        "annual",
+      ],
       transaction_type: [
         "buy",
         "sell",
