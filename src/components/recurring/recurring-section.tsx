@@ -104,10 +104,13 @@ export function RecurringSection({ asset }: { asset: Asset }) {
     onError: (e: Error) => toast.error(e.message),
   });
   const dismissM = useMutation({
-    mutationFn: ({ id, date }: { id: string; date: string }) => markGeneratedUpTo(id, date),
-    onSuccess: () => {
+    mutationFn: ({ id, dates }: { id: string; dates: string[] }) =>
+      dismissOccurrences(id, dates),
+    onSuccess: (_data, vars) => {
       invalidate();
-      toast.success("Ocorrência dispensada");
+      toast.success(
+        vars.dates.length === 1 ? "Ocorrência dispensada" : `${vars.dates.length} ocorrências dispensadas`,
+      );
     },
     onError: (e: Error) => toast.error(e.message),
   });
