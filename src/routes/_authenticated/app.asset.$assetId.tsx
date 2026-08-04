@@ -9,6 +9,7 @@ import { ChevronRight } from "lucide-react";
 import { TransactionsSection } from "@/components/transactions/transactions-section";
 import { RecurringSection } from "@/components/recurring/recurring-section";
 import { listTransactions } from "@/repositories/transactions";
+import { formatDateLabel } from "@/lib/date-format";
 
 
 export const Route = createFileRoute("/_authenticated/app/asset/$assetId")({
@@ -99,7 +100,7 @@ function AssetDetailPage() {
             <div>
               <dt className="text-xs text-muted-foreground">Data de aquisição (derivada)</dt>
               <dd className="text-sm">
-                {acquiredAt ? new Date(acquiredAt).toLocaleDateString("pt-PT") : "—"}
+                {acquiredAt ? formatDateLabel(acquiredAt) : "—"}
               </dd>
             </div>
           </dl>

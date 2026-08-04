@@ -50,20 +50,25 @@ const payload = (input: RecurringWriteInput) => ({
 export async function createRecurringTransaction(
   input: RecurringWriteInput & { assetId: string; backfillHistory?: boolean },
 ): Promise<RecurringTransaction> {
+  const mode = input.executionMode ?? "manual";
+  // Histórico pedido → marca vazia, para que as ocorrências passadas existam.
+  // Em modo manual ficam apenas pendentes; em automático são materializadas já.
+  const backfill = Boolean(input.backfillHistory);
+
   const { data, error } = await supabase
     .from("recurring_transactions")
     .insert({
       asset_id: input.assetId,
       ...payload(input),
-      // Opção A (apenas futuro): nada retroativo é gerado.
-      last_generated_on: input.backfillHistory ? null : todayISO(),
+      // Opção A (apenas futuro): nada retroativo é gerado nem fica pendente.
+      last_generated_on: backfill ? null : todayISO(),
     })
     .select("*")
     .single();
   if (error) throw error;
   const rule = toRecurringTransaction(data);
 
-  if (input.backfillHistory) {
+  if (backfill && mode === "automatic") {
     await generateOccurrences(rule);
   }
   return rule;
@@ -116,7 +121,8 @@ export async function generateOccurrences(
   const rows = targets.map((date) => ({
     asset_id: rule.assetId,
     type: rule.type,
-    occurred_at: `${date}T00:00:00.000Z`,
+    // Meio-dia UTC: qualquer formatação local cai sempre no dia previsto.
+    occurred_at: `${date}T12:00:00.000Z`,
     quantity: 0,
     unit_price: 0,
     amount: rule.amount,

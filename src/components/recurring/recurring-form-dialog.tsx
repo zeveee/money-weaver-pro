@@ -9,6 +9,7 @@ import type {
 } from "@/domain/types";
 import { getTransactionProfile, getTransactionTypeOptions } from "@/domain/transaction-profiles";
 import { occurrencesBetween, todayISO } from "@/services/recurrence";
+import { formatDateLabel } from "@/lib/date-format";
 import type { RecurringWriteInput } from "@/repositories/recurring-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -206,7 +207,9 @@ export function RecurringFormDialog({
               {backfill
                 ? preview.length === 0
                   ? "Nenhuma ocorrência prevista até hoje."
-                  : `${preview.length} ocorrências entre ${preview[0]} e ${preview[preview.length - 1]} · total ${money(previewTotal, currency)}. Serão criadas transações reais, que contam para capital investido, rentabilidade e XIRR.`
+                  : executionMode === "manual"
+                    ? `${preview.length} ocorrências entre ${formatDateLabel(preview[0]!)} e ${formatDateLabel(preview[preview.length - 1]!)} · total ${money(previewTotal, currency)}. Ficam pendentes para confirmação — nenhuma transação é criada automaticamente.`
+                    : `${preview.length} ocorrências entre ${formatDateLabel(preview[0]!)} e ${formatDateLabel(preview[preview.length - 1]!)} · total ${money(previewTotal, currency)}. Serão criadas transações reais, que contam para capital investido, rentabilidade e XIRR.`
                 : "Sem histórico: a regra passa a valer apenas para o futuro."}
             </p>
           </div>
