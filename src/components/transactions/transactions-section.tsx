@@ -40,6 +40,8 @@ const money = (value: number, currency: string) => {
   }
 };
 
+import { formatDateLabel } from "@/lib/date-format";
+
 const dateLabel = (iso: string) => formatDateLabel(iso);
 
 const INCOME_KIND_LABEL: Record<string, string> = {
