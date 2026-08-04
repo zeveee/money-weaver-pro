@@ -141,7 +141,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "ter", label: "TER (%)", kind: "number", target: "metadata", min: 0, max: 5, step: 0.01 },
       { key: "replication", label: "Replicação", kind: "text", target: "metadata", maxLength: 40 },
     ],
-PLACEHOLDER
+    transactionTypes: txFor("etf"),
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -156,7 +156,7 @@ PLACEHOLDER
       { key: "sector", label: "Setor", kind: "text", target: "metadata", maxLength: 60 },
       { key: "country", label: "País", kind: "text", target: "metadata", maxLength: 60 },
     ],
-PLACEHOLDER
+    transactionTypes: txFor("stock"),
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -172,7 +172,7 @@ PLACEHOLDER
       { key: "ter", label: "TER (%)", kind: "number", target: "metadata", min: 0, max: 5, step: 0.01 },
       ...RECURRING_FIELDS,
     ],
-PLACEHOLDER
+    transactionTypes: txFor("fund"),
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -189,7 +189,7 @@ PLACEHOLDER
       ...RECURRING_FIELDS,
     ],
     // Modelo simplificado: entradas e saídas de capital.
-PLACEHOLDER
+    transactionTypes: txFor("ppr"),
     futureTransactionTypes: ["distinção PPR Fundo vs PPR Seguro (unidades de participação, apólice)"],
     supportsValuations: true,
     supportsRecurring: true,
@@ -205,7 +205,7 @@ PLACEHOLDER
       { key: "guaranteedRate", label: "Taxa garantida (%)", kind: "number", target: "metadata", min: 0, step: 0.01 },
       ...RECURRING_FIELDS,
     ],
-PLACEHOLDER
+    transactionTypes: txFor("capitalization_insurance"),
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -220,7 +220,7 @@ PLACEHOLDER
       { key: "maturityDate", label: "Maturidade", kind: "date", target: "metadata" },
       { key: "issuer", label: "Emitente", kind: "text", target: "metadata", maxLength: 80 },
     ],
-PLACEHOLDER
+    transactionTypes: txFor("bond"),
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -235,7 +235,7 @@ PLACEHOLDER
       { key: "accountAlias", label: "Alias da conta", kind: "text", target: "metadata", maxLength: 60 },
       { key: "interestRate", label: "Taxa de juro (%)", kind: "number", target: "metadata", min: 0, step: 0.01 },
     ],
-PLACEHOLDER
+    transactionTypes: txFor("cash"),
     // Recorrência desativada nesta fase, mas o bloco metadata.recurring é o mesmo
     // usado por PPR/fundos/seguros (ex.: transferência automática para poupança).
     supportsValuations: true,
@@ -252,7 +252,7 @@ PLACEHOLDER
       { key: "custody", label: "Custódia", kind: "text", target: "metadata", maxLength: 80 },
       { key: "walletLabel", label: "Carteira", kind: "text", target: "metadata", maxLength: 60 },
     ],
-PLACEHOLDER
+    transactionTypes: txFor("crypto"),
     // Compatibilidade futura sem alterar schema: registados em metadata.subtype
     // sobre transações existentes até existirem tipos dedicados.
     futureTransactionTypes: ["staking_reward", "airdrop", "fork"],
@@ -271,7 +271,7 @@ PLACEHOLDER
       { key: "areaSqm", label: "Área (m²)", kind: "number", target: "metadata", min: 0, step: 0.01 },
       { key: "rentalIncomeMonthly", label: "Renda mensal", kind: "number", target: "metadata", min: 0, step: 0.01 },
     ],
-PLACEHOLDER
+    transactionTypes: txFor("real_estate"),
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -296,7 +296,7 @@ PLACEHOLDER
       { key: "storage", label: "Armazenamento", kind: "text", target: "metadata", maxLength: 80 },
       { key: "unit", label: "Unidade", kind: "text", target: "metadata", maxLength: 20, placeholder: "oz" },
     ],
-PLACEHOLDER
+    transactionTypes: txFor("commodity"),
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
