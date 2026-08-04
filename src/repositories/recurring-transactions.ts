@@ -121,7 +121,8 @@ export async function generateOccurrences(
   const rows = targets.map((date) => ({
     asset_id: rule.assetId,
     type: rule.type,
-    occurred_at: `${date}T00:00:00.000Z`,
+    // Meio-dia UTC: qualquer formatação local cai sempre no dia previsto.
+    occurred_at: `${date}T12:00:00.000Z`,
     quantity: 0,
     unit_price: 0,
     amount: rule.amount,

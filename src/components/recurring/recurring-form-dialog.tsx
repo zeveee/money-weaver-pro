@@ -206,7 +206,9 @@ export function RecurringFormDialog({
               {backfill
                 ? preview.length === 0
                   ? "Nenhuma ocorrência prevista até hoje."
-                  : `${preview.length} ocorrências entre ${preview[0]} e ${preview[preview.length - 1]} · total ${money(previewTotal, currency)}. Serão criadas transações reais, que contam para capital investido, rentabilidade e XIRR.`
+                  : executionMode === "manual"
+                    ? `${preview.length} ocorrências entre ${formatDateLabel(preview[0]!)} e ${formatDateLabel(preview[preview.length - 1]!)} · total ${money(previewTotal, currency)}. Ficam pendentes para confirmação — nenhuma transação é criada automaticamente.`
+                    : `${preview.length} ocorrências entre ${formatDateLabel(preview[0]!)} e ${formatDateLabel(preview[preview.length - 1]!)} · total ${money(previewTotal, currency)}. Serão criadas transações reais, que contam para capital investido, rentabilidade e XIRR.`
                 : "Sem histórico: a regra passa a valer apenas para o futuro."}
             </p>
           </div>
