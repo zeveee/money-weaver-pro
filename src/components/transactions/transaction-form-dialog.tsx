@@ -2,9 +2,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { AssetType, Transaction, TransactionType } from "@/domain/types";
 import {
+  derivedUnitPrice,
+  effectiveUnitPrice,
+  getTransactionOption,
   getTransactionProfile,
   getTransactionTypeOptions,
   getTransactionTypes,
+  usesQuantity as usesQuantityFor,
   validateTransactionForm,
   type TransactionFormValues,
 } from "@/domain/transaction-profiles";
@@ -37,7 +41,6 @@ function initialValues(
       type: fallback,
       occurredAt: toLocalInput(new Date().toISOString()),
       quantity: "",
-      unitPrice: "",
       amount: "",
       currency,
       fees: "",
@@ -49,7 +52,6 @@ function initialValues(
     type: tx.type,
     occurredAt: toLocalInput(tx.occurredAt),
     quantity: tx.quantity ? String(tx.quantity) : "",
-    unitPrice: tx.unitPrice ? String(tx.unitPrice) : "",
     amount: String(tx.amount ?? ""),
     currency: tx.currency || currency,
     fees: tx.fees ? String(tx.fees) : "",
@@ -75,42 +77,45 @@ export function TransactionFormDialog({
     setValues((p) => ({ ...p, [key]: value }));
 
   const profile = getTransactionProfile(values.type);
+  const option = getTransactionOption(assetType, values.type);
+  const withQuantity = usesQuantityFor(assetType, values.type);
   const options = getTransactionTypeOptions(assetType);
 
   const changeType = (next: TransactionType) => {
-    const nextProfile = getTransactionProfile(next);
     setValues((p) => ({
       ...p,
       type: next,
-      quantity: nextProfile.usesQuantity ? p.quantity : "",
-      unitPrice: nextProfile.usesQuantity ? p.unitPrice : "",
+      quantity: usesQuantityFor(assetType, next) ? p.quantity : "",
     }));
   };
 
-  const autoAmount = () => {
-    if (!profile.usesQuantity) return;
-    const q = Number(values.quantity);
-    const p = Number(values.unitPrice);
-    if (Number.isFinite(q) && Number.isFinite(p) && q > 0 && p > 0) {
-      set("amount", String(Number((q * p).toFixed(2))));
-    }
-  };
+  const qty = Number(values.quantity);
+  const amount = Number(values.amount);
+  const fees = values.fees === "" ? 0 : Number(values.fees);
+  const taxes = values.taxes === "" ? 0 : Number(values.taxes);
+  const showUnitPrice = withQuantity && qty > 0 && Number.isFinite(amount) && amount > 0;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const result = validateTransactionForm(assetType, values);
     if (!result.ok) return toast.error(result.message);
 
+    const quantity = withQuantity ? qty : 0;
     onSubmit({
       type: values.type,
       occurredAt: new Date(values.occurredAt).toISOString(),
-      quantity: profile.usesQuantity ? Number(values.quantity) : 0,
-      unitPrice: profile.usesQuantity ? Number(values.unitPrice) : 0,
-      amount: Number(values.amount),
+      quantity,
+      // Preço unitário é sempre derivado — nunca introduzido pelo utilizador.
+      unitPrice: withQuantity ? derivedUnitPrice(amount, quantity) : 0,
+      amount,
       currency: values.currency,
-      fees: values.fees === "" ? 0 : Number(values.fees),
-      taxes: values.taxes === "" ? 0 : Number(values.taxes),
+      fees,
+      taxes,
       notes: values.notes.trim() === "" ? null : values.notes.trim(),
+      metadata: {
+        ...(transaction?.metadata ?? {}),
+        ...(option?.incomeKind ? { incomeKind: option.incomeKind } : {}),
+      },
     });
   };
 
@@ -119,7 +124,8 @@ export function TransactionFormDialog({
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>
-          As transações são a fonte de verdade do histórico financeiro do ativo.
+          As transações são a fonte de verdade do histórico financeiro do ativo. A posição
+          (quantidade, custo médio) é derivada — nunca introduzida manualmente.
         </DialogDescription>
       </DialogHeader>
 
@@ -134,6 +140,7 @@ export function TransactionFormDialog({
               ))}
             </SelectContent>
           </Select>
+          {option?.help && <p className="text-xs text-muted-foreground">{option.help}</p>}
         </div>
 
         <div className="space-y-2">
@@ -146,32 +153,19 @@ export function TransactionFormDialog({
           />
         </div>
 
-        {profile.usesQuantity && (
-          <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {withQuantity && (
             <div className="space-y-2">
               <Label htmlFor="t-qty">Quantidade *</Label>
               <Input
                 id="t-qty" type="number" step="any" min={0}
                 value={values.quantity}
                 onChange={(e) => set("quantity", e.target.value)}
-                onBlur={autoAmount}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="t-price">Preço unitário *</Label>
-              <Input
-                id="t-price" type="number" step="any" min={0}
-                value={values.unitPrice}
-                onChange={(e) => set("unitPrice", e.target.value)}
-                onBlur={autoAmount}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-3 sm:grid-cols-2">
+          )}
           <div className="space-y-2">
-            <Label htmlFor="t-amount">Montante *</Label>
+            <Label htmlFor="t-amount">Montante total *</Label>
             <Input
               id="t-amount" type="number" step="any" min={0}
               value={values.amount}
@@ -205,6 +199,24 @@ export function TransactionFormDialog({
             />
           </div>
         </div>
+
+        {showUnitPrice && (
+          <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+            Preço unitário derivado:{" "}
+            <span className="font-medium text-foreground">
+              {derivedUnitPrice(amount, qty).toFixed(4)} {values.currency}
+            </span>
+            {(fees > 0 || taxes > 0) && (
+              <>
+                {" "}· efetivo (com custos):{" "}
+                <span className="font-medium text-foreground">
+                  {effectiveUnitPrice(profile.direction, amount, qty, fees, taxes).toFixed(4)}{" "}
+                  {values.currency}
+                </span>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="t-notes">Notas</Label>
