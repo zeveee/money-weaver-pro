@@ -11,6 +11,7 @@
  */
 
 import type { AssetType, TransactionType } from "./types";
+import { getTransactionTypes } from "./transaction-profiles";
 
 export type FieldKind = "text" | "number" | "date" | "select" | "checkbox" | "textarea";
 
@@ -68,14 +69,22 @@ export const COMMON_FIELDS: AssetFieldSpec[] = [
     required: true,
     maxLength: 3,
     placeholder: "EUR",
-    validate: (v) => (ISO_CURRENCY.test(String(v ?? "")) ? null : "Moeda deve ser ISO 4217 (ex.: EUR)"),
+    validate: (v) =>
+      ISO_CURRENCY.test(String(v ?? "")) ? null : "Moeda deve ser ISO 4217 (ex.: EUR)",
   },
   { key: "acquiredAt", label: "Data de aquisição", kind: "date", target: "column" },
   { key: "notes", label: "Notas", kind: "textarea", target: "column", maxLength: 1000 },
 ];
 
 const marketIdentifiers: AssetFieldSpec[] = [
-  { key: "ticker", label: "Ticker", kind: "text", target: "column", maxLength: 20, placeholder: "VWCE" },
+  {
+    key: "ticker",
+    label: "Ticker",
+    kind: "text",
+    target: "column",
+    maxLength: 20,
+    placeholder: "VWCE",
+  },
   {
     key: "isin",
     label: "ISIN",
@@ -83,9 +92,18 @@ const marketIdentifiers: AssetFieldSpec[] = [
     target: "column",
     maxLength: 12,
     validate: (v) =>
-      !v || /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(String(v)) ? null : "ISIN inválido (12 caracteres, ex.: IE00BK5BQT80)",
+      !v || /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(String(v))
+        ? null
+        : "ISIN inválido (12 caracteres, ex.: IE00BK5BQT80)",
   },
-  { key: "exchange", label: "Bolsa", kind: "text", target: "metadata", maxLength: 40, placeholder: "XETRA" },
+  {
+    key: "exchange",
+    label: "Bolsa",
+    kind: "text",
+    target: "metadata",
+    maxLength: 40,
+    placeholder: "XETRA",
+  },
   { key: "broker", label: "Corretora / Custódia", kind: "text", target: "metadata", maxLength: 80 },
 ];
 
@@ -97,7 +115,14 @@ const RECURRING_FIELDS: AssetFieldSpec[] = [
     target: "metadata",
     help: "Instrução declarativa — não gera transações futuras automaticamente.",
   },
-  { key: "recurring.amount", label: "Valor da contribuição", kind: "number", target: "metadata", min: 0, step: 0.01 },
+  {
+    key: "recurring.amount",
+    label: "Valor da contribuição",
+    kind: "number",
+    target: "metadata",
+    min: 0,
+    step: 0.01,
+  },
   {
     key: "recurring.frequency",
     label: "Frequência",
@@ -110,10 +135,23 @@ const RECURRING_FIELDS: AssetFieldSpec[] = [
       { value: "annual", label: "Anual" },
     ],
   },
-  { key: "recurring.dayOfExecution", label: "Dia de execução", kind: "number", target: "metadata", min: 1, max: 31, step: 1 },
+  {
+    key: "recurring.dayOfExecution",
+    label: "Dia de execução",
+    kind: "number",
+    target: "metadata",
+    min: 1,
+    max: 31,
+    step: 1,
+  },
 ];
 
-const TRADED_TX: TransactionType[] = ["buy", "sell", "fee", "tax", "transfer_in", "transfer_out", "adjustment"];
+/**
+ * Os tipos de transação por AssetType são definidos na matriz declarativa em
+ * `transaction-profiles.ts` (rótulos contextuais + semântica de rendimento).
+ * Aqui apenas se reexpõem, para que o perfil do ativo continue autocontido.
+ */
+const txFor = (type: AssetType): TransactionType[] => getTransactionTypes(type);
 
 export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
   etf: {
@@ -132,10 +170,18 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
           { value: "distributing", label: "Distribuição" },
         ],
       },
-      { key: "ter", label: "TER (%)", kind: "number", target: "metadata", min: 0, max: 5, step: 0.01 },
+      {
+        key: "ter",
+        label: "TER (%)",
+        kind: "number",
+        target: "metadata",
+        min: 0,
+        max: 5,
+        step: 0.01,
+      },
       { key: "replication", label: "Replicação", kind: "text", target: "metadata", maxLength: 40 },
     ],
-    transactionTypes: [...TRADED_TX, "dividend"],
+    transactionTypes: txFor("etf"),
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -150,7 +196,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "sector", label: "Setor", kind: "text", target: "metadata", maxLength: 60 },
       { key: "country", label: "País", kind: "text", target: "metadata", maxLength: 60 },
     ],
-    transactionTypes: [...TRADED_TX, "dividend"],
+    transactionTypes: txFor("stock"),
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -162,11 +208,25 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
     purpose: "Fundo de investimento não cotado, subscrito por valor ou unidades de participação.",
     fields: [
       { key: "isin", label: "ISIN", kind: "text", target: "column", maxLength: 12 },
-      { key: "manager", label: "Entidade gestora", kind: "text", target: "metadata", maxLength: 80 },
-      { key: "ter", label: "TER (%)", kind: "number", target: "metadata", min: 0, max: 5, step: 0.01 },
+      {
+        key: "manager",
+        label: "Entidade gestora",
+        kind: "text",
+        target: "metadata",
+        maxLength: 80,
+      },
+      {
+        key: "ter",
+        label: "TER (%)",
+        kind: "number",
+        target: "metadata",
+        min: 0,
+        max: 5,
+        step: 0.01,
+      },
       ...RECURRING_FIELDS,
     ],
-    transactionTypes: [...TRADED_TX, "dividend"],
+    transactionTypes: txFor("fund"),
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -179,12 +239,20 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       "Plano Poupança Reforma modelado de forma simplificada por depósitos e resgates, independentemente de ser fundo ou seguro.",
     fields: [
       { key: "provider", label: "Entidade", kind: "text", target: "metadata", maxLength: 80 },
-      { key: "contractNumber", label: "Nº de contrato", kind: "text", target: "metadata", maxLength: 60 },
+      {
+        key: "contractNumber",
+        label: "Nº de contrato",
+        kind: "text",
+        target: "metadata",
+        maxLength: 60,
+      },
       ...RECURRING_FIELDS,
     ],
     // Modelo simplificado: entradas e saídas de capital.
-    transactionTypes: ["deposit", "withdrawal", "fee", "tax", "adjustment"],
-    futureTransactionTypes: ["distinção PPR Fundo vs PPR Seguro (unidades de participação, apólice)"],
+    transactionTypes: txFor("ppr"),
+    futureTransactionTypes: [
+      "distinção PPR Fundo vs PPR Seguro (unidades de participação, apólice)",
+    ],
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -192,14 +260,28 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
   capitalization_insurance: {
     type: "capitalization_insurance",
     label: "Seguro de capitalização",
-    purpose: "Produto segurador com capital garantido/valorização periódica; valor atual vem da última valoração.",
+    purpose:
+      "Produto segurador com capital garantido/valorização periódica; valor atual vem da última valoração.",
     fields: [
       { key: "insurer", label: "Seguradora", kind: "text", target: "metadata", maxLength: 80 },
-      { key: "policyNumber", label: "Nº de apólice", kind: "text", target: "metadata", maxLength: 60 },
-      { key: "guaranteedRate", label: "Taxa garantida (%)", kind: "number", target: "metadata", min: 0, step: 0.01 },
+      {
+        key: "policyNumber",
+        label: "Nº de apólice",
+        kind: "text",
+        target: "metadata",
+        maxLength: 60,
+      },
+      {
+        key: "guaranteedRate",
+        label: "Taxa garantida (%)",
+        kind: "number",
+        target: "metadata",
+        min: 0,
+        step: 0.01,
+      },
       ...RECURRING_FIELDS,
     ],
-    transactionTypes: ["deposit", "withdrawal", "interest", "fee", "tax", "adjustment"],
+    transactionTypes: txFor("capitalization_insurance"),
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -210,11 +292,18 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
     purpose: "Instrumento de dívida com cupões e maturidade.",
     fields: [
       ...marketIdentifiers,
-      { key: "couponRate", label: "Taxa de cupão (%)", kind: "number", target: "metadata", min: 0, step: 0.01 },
+      {
+        key: "couponRate",
+        label: "Taxa de cupão (%)",
+        kind: "number",
+        target: "metadata",
+        min: 0,
+        step: 0.01,
+      },
       { key: "maturityDate", label: "Maturidade", kind: "date", target: "metadata" },
       { key: "issuer", label: "Emitente", kind: "text", target: "metadata", maxLength: 80 },
     ],
-    transactionTypes: [...TRADED_TX, "coupon"],
+    transactionTypes: txFor("bond"),
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -226,10 +315,23 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
     purpose: "Contas à ordem, poupança ou depósitos; movimentos por depósitos e levantamentos.",
     fields: [
       { key: "institution", label: "Instituição", kind: "text", target: "metadata", maxLength: 80 },
-      { key: "accountAlias", label: "Alias da conta", kind: "text", target: "metadata", maxLength: 60 },
-      { key: "interestRate", label: "Taxa de juro (%)", kind: "number", target: "metadata", min: 0, step: 0.01 },
+      {
+        key: "accountAlias",
+        label: "Alias da conta",
+        kind: "text",
+        target: "metadata",
+        maxLength: 60,
+      },
+      {
+        key: "interestRate",
+        label: "Taxa de juro (%)",
+        kind: "number",
+        target: "metadata",
+        min: 0,
+        step: 0.01,
+      },
     ],
-    transactionTypes: ["deposit", "withdrawal", "interest", "fee", "tax", "transfer_in", "transfer_out", "adjustment"],
+    transactionTypes: txFor("cash"),
     // Recorrência desativada nesta fase, mas o bloco metadata.recurring é o mesmo
     // usado por PPR/fundos/seguros (ex.: transferência automática para poupança).
     supportsValuations: true,
@@ -241,12 +343,19 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
     label: "Cripto",
     purpose: "Ativos digitais com quantidade fracionada e custódia própria ou em exchange.",
     fields: [
-      { key: "ticker", label: "Símbolo", kind: "text", target: "column", maxLength: 20, placeholder: "BTC" },
+      {
+        key: "ticker",
+        label: "Símbolo",
+        kind: "text",
+        target: "column",
+        maxLength: 20,
+        placeholder: "BTC",
+      },
       { key: "network", label: "Rede", kind: "text", target: "metadata", maxLength: 40 },
       { key: "custody", label: "Custódia", kind: "text", target: "metadata", maxLength: 80 },
       { key: "walletLabel", label: "Carteira", kind: "text", target: "metadata", maxLength: 60 },
     ],
-    transactionTypes: [...TRADED_TX],
+    transactionTypes: txFor("crypto"),
     // Compatibilidade futura sem alterar schema: registados em metadata.subtype
     // sobre transações existentes até existirem tipos dedicados.
     futureTransactionTypes: ["staking_reward", "airdrop", "fork"],
@@ -261,11 +370,31 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
     purpose: "Imóvel detido; valor atual sempre proveniente da última valoração.",
     fields: [
       { key: "address", label: "Morada", kind: "text", target: "metadata", maxLength: 200 },
-      { key: "propertyType", label: "Tipo de imóvel", kind: "text", target: "metadata", maxLength: 60 },
-      { key: "areaSqm", label: "Área (m²)", kind: "number", target: "metadata", min: 0, step: 0.01 },
-      { key: "rentalIncomeMonthly", label: "Renda mensal", kind: "number", target: "metadata", min: 0, step: 0.01 },
+      {
+        key: "propertyType",
+        label: "Tipo de imóvel",
+        kind: "text",
+        target: "metadata",
+        maxLength: 60,
+      },
+      {
+        key: "areaSqm",
+        label: "Área (m²)",
+        kind: "number",
+        target: "metadata",
+        min: 0,
+        step: 0.01,
+      },
+      {
+        key: "rentalIncomeMonthly",
+        label: "Renda mensal",
+        kind: "number",
+        target: "metadata",
+        min: 0,
+        step: 0.01,
+      },
     ],
-    transactionTypes: ["buy", "sell", "fee", "tax", "interest", "adjustment"],
+    transactionTypes: txFor("real_estate"),
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -275,7 +404,14 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
     label: "Commodity",
     purpose: "Matérias-primas (ouro, prata, petróleo) detidas fisicamente ou via instrumento.",
     fields: [
-      { key: "ticker", label: "Símbolo", kind: "text", target: "column", maxLength: 20, placeholder: "XAU" },
+      {
+        key: "ticker",
+        label: "Símbolo",
+        kind: "text",
+        target: "column",
+        maxLength: 20,
+        placeholder: "XAU",
+      },
       {
         key: "holdingForm",
         label: "Forma de detenção",
@@ -288,9 +424,16 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
         ],
       },
       { key: "storage", label: "Armazenamento", kind: "text", target: "metadata", maxLength: 80 },
-      { key: "unit", label: "Unidade", kind: "text", target: "metadata", maxLength: 20, placeholder: "oz" },
+      {
+        key: "unit",
+        label: "Unidade",
+        kind: "text",
+        target: "metadata",
+        maxLength: 20,
+        placeholder: "oz",
+      },
     ],
-    transactionTypes: [...TRADED_TX],
+    transactionTypes: txFor("commodity"),
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -327,8 +470,10 @@ export function validateAssetForm(
     if (field.kind === "number") {
       const n = Number(raw);
       if (Number.isNaN(n)) return { ok: false, message: `${field.label} deve ser numérico` };
-      if (field.min != null && n < field.min) return { ok: false, message: `${field.label} não pode ser inferior a ${field.min}` };
-      if (field.max != null && n > field.max) return { ok: false, message: `${field.label} não pode exceder ${field.max}` };
+      if (field.min != null && n < field.min)
+        return { ok: false, message: `${field.label} não pode ser inferior a ${field.min}` };
+      if (field.max != null && n > field.max)
+        return { ok: false, message: `${field.label} não pode exceder ${field.max}` };
     }
     if (field.maxLength && String(raw).length > field.maxLength) {
       return { ok: false, message: `${field.label} excede ${field.maxLength} caracteres` };
@@ -339,9 +484,12 @@ export function validateAssetForm(
 
   const profile = getAssetProfile(type);
   if (profile.supportsRecurring && values["recurring.enabled"]) {
-    if (!values["recurring.amount"]) return { ok: false, message: "Valor da contribuição recorrente é obrigatório" };
-    if (!values["recurring.frequency"]) return { ok: false, message: "Frequência da contribuição é obrigatória" };
-    if (!values["recurring.dayOfExecution"]) return { ok: false, message: "Dia de execução é obrigatório" };
+    if (!values["recurring.amount"])
+      return { ok: false, message: "Valor da contribuição recorrente é obrigatório" };
+    if (!values["recurring.frequency"])
+      return { ok: false, message: "Frequência da contribuição é obrigatória" };
+    if (!values["recurring.dayOfExecution"])
+      return { ok: false, message: "Dia de execução é obrigatório" };
   }
   return { ok: true };
 }
