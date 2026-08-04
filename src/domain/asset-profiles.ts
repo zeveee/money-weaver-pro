@@ -11,6 +11,7 @@
  */
 
 import type { AssetType, TransactionType } from "./types";
+import { getTransactionTypes } from "./transaction-profiles";
 
 export type FieldKind = "text" | "number" | "date" | "select" | "checkbox" | "textarea";
 
@@ -113,7 +114,12 @@ const RECURRING_FIELDS: AssetFieldSpec[] = [
   { key: "recurring.dayOfExecution", label: "Dia de execução", kind: "number", target: "metadata", min: 1, max: 31, step: 1 },
 ];
 
-const TRADED_TX: TransactionType[] = ["buy", "sell", "fee", "tax", "transfer_in", "transfer_out", "adjustment"];
+/**
+ * Os tipos de transação por AssetType são definidos na matriz declarativa em
+ * `transaction-profiles.ts` (rótulos contextuais + semântica de rendimento).
+ * Aqui apenas se reexpõem, para que o perfil do ativo continue autocontido.
+ */
+const txFor = (type: AssetType): TransactionType[] => getTransactionTypes(type);
 
 export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
   etf: {
@@ -135,7 +141,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "ter", label: "TER (%)", kind: "number", target: "metadata", min: 0, max: 5, step: 0.01 },
       { key: "replication", label: "Replicação", kind: "text", target: "metadata", maxLength: 40 },
     ],
-    transactionTypes: [...TRADED_TX, "dividend"],
+PLACEHOLDER
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -150,7 +156,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "sector", label: "Setor", kind: "text", target: "metadata", maxLength: 60 },
       { key: "country", label: "País", kind: "text", target: "metadata", maxLength: 60 },
     ],
-    transactionTypes: [...TRADED_TX, "dividend"],
+PLACEHOLDER
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -166,7 +172,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "ter", label: "TER (%)", kind: "number", target: "metadata", min: 0, max: 5, step: 0.01 },
       ...RECURRING_FIELDS,
     ],
-    transactionTypes: [...TRADED_TX, "dividend"],
+PLACEHOLDER
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -183,7 +189,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       ...RECURRING_FIELDS,
     ],
     // Modelo simplificado: entradas e saídas de capital.
-    transactionTypes: ["deposit", "withdrawal", "fee", "tax", "adjustment"],
+PLACEHOLDER
     futureTransactionTypes: ["distinção PPR Fundo vs PPR Seguro (unidades de participação, apólice)"],
     supportsValuations: true,
     supportsRecurring: true,
@@ -199,7 +205,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "guaranteedRate", label: "Taxa garantida (%)", kind: "number", target: "metadata", min: 0, step: 0.01 },
       ...RECURRING_FIELDS,
     ],
-    transactionTypes: ["deposit", "withdrawal", "interest", "fee", "tax", "adjustment"],
+PLACEHOLDER
     supportsValuations: true,
     supportsRecurring: true,
     recurringCompatible: true,
@@ -214,7 +220,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "maturityDate", label: "Maturidade", kind: "date", target: "metadata" },
       { key: "issuer", label: "Emitente", kind: "text", target: "metadata", maxLength: 80 },
     ],
-    transactionTypes: [...TRADED_TX, "coupon"],
+PLACEHOLDER
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -229,7 +235,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "accountAlias", label: "Alias da conta", kind: "text", target: "metadata", maxLength: 60 },
       { key: "interestRate", label: "Taxa de juro (%)", kind: "number", target: "metadata", min: 0, step: 0.01 },
     ],
-    transactionTypes: ["deposit", "withdrawal", "interest", "fee", "tax", "transfer_in", "transfer_out", "adjustment"],
+PLACEHOLDER
     // Recorrência desativada nesta fase, mas o bloco metadata.recurring é o mesmo
     // usado por PPR/fundos/seguros (ex.: transferência automática para poupança).
     supportsValuations: true,
@@ -246,7 +252,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "custody", label: "Custódia", kind: "text", target: "metadata", maxLength: 80 },
       { key: "walletLabel", label: "Carteira", kind: "text", target: "metadata", maxLength: 60 },
     ],
-    transactionTypes: [...TRADED_TX],
+PLACEHOLDER
     // Compatibilidade futura sem alterar schema: registados em metadata.subtype
     // sobre transações existentes até existirem tipos dedicados.
     futureTransactionTypes: ["staking_reward", "airdrop", "fork"],
@@ -265,7 +271,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "areaSqm", label: "Área (m²)", kind: "number", target: "metadata", min: 0, step: 0.01 },
       { key: "rentalIncomeMonthly", label: "Renda mensal", kind: "number", target: "metadata", min: 0, step: 0.01 },
     ],
-    transactionTypes: ["buy", "sell", "fee", "tax", "interest", "adjustment"],
+PLACEHOLDER
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
@@ -290,7 +296,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
       { key: "storage", label: "Armazenamento", kind: "text", target: "metadata", maxLength: 80 },
       { key: "unit", label: "Unidade", kind: "text", target: "metadata", maxLength: 20, placeholder: "oz" },
     ],
-    transactionTypes: [...TRADED_TX],
+PLACEHOLDER
     supportsValuations: true,
     supportsRecurring: false,
     recurringCompatible: true,
