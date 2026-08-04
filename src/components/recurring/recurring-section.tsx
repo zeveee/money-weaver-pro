@@ -274,7 +274,7 @@ export function RecurringSection({ asset }: { asset: Asset }) {
                                   variant="ghost"
                                   className="h-7 px-2"
                                   disabled={dismissM.isPending}
-                                  onClick={() => dismissM.mutate({ id: r.id, date: d })}
+                                  onClick={() => dismissM.mutate({ id: r.id, dates: [d] })}
                                 >
                                   Dispensar
                                 </Button>
