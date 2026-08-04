@@ -9,6 +9,7 @@ import { ChevronRight } from "lucide-react";
 import { TransactionsSection } from "@/components/transactions/transactions-section";
 import { RecurringSection } from "@/components/recurring/recurring-section";
 import { listTransactions } from "@/repositories/transactions";
+import { formatDateLabel } from "@/lib/date-format";
 
 
 export const Route = createFileRoute("/_authenticated/app/asset/$assetId")({
