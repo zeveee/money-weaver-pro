@@ -113,6 +113,8 @@ export type RecurrenceFrequency =
   | "semiannual"
   | "annual";
 
+export type RecurrenceExecutionMode = "manual" | "automatic";
+
 /**
  * Instrução de reforço programado. Nunca é um facto financeiro:
  * não entra em capital investido, rentabilidade ou XIRR.
