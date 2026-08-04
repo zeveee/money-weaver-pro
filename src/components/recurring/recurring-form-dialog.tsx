@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { AssetType, RecurrenceFrequency, RecurringTransaction, TransactionType } from "@/domain/types";
+import type {
+  AssetType,
+  RecurrenceExecutionMode,
+  RecurrenceFrequency,
+  RecurringTransaction,
+  TransactionType,
+} from "@/domain/types";
 import { getTransactionProfile, getTransactionTypeOptions } from "@/domain/transaction-profiles";
+import { occurrencesBetween, todayISO } from "@/services/recurrence";
 import type { RecurringWriteInput } from "@/repositories/recurring-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +30,20 @@ export const FREQUENCY_OPTIONS: { value: RecurrenceFrequency; label: string }[] 
   { value: "annual", label: "Anual" },
 ];
 
+export const MODE_OPTIONS: { value: RecurrenceExecutionMode; label: string }[] = [
+  { value: "manual", label: "Manual (confirmação do utilizador)" },
+  { value: "automatic", label: "Automático (débito direto)" },
+];
+
 const today = () => new Date().toISOString().slice(0, 10);
+
+const money = (value: number, currency: string) => {
+  try {
+    return new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value);
+  } catch {
+    return `${value.toFixed(2)} ${currency}`;
+  }
+};
 
 export function RecurringFormDialog({
   title, assetType, currency, recurring, onSubmit, loading,
@@ -32,7 +52,7 @@ export function RecurringFormDialog({
   assetType: AssetType;
   currency: string;
   recurring?: RecurringTransaction;
-  onSubmit: (input: RecurringWriteInput) => void;
+  onSubmit: (input: RecurringWriteInput & { backfillHistory?: boolean }) => void;
   loading: boolean;
 }) {
   const typeOptions = getTransactionTypeOptions(assetType).filter((o) =>
@@ -48,7 +68,23 @@ export function RecurringFormDialog({
   const [startDate, setStartDate] = useState(recurring?.startDate ?? today());
   const [endDate, setEndDate] = useState(recurring?.endDate ?? "");
   const [isActive, setIsActive] = useState(recurring?.isActive ?? true);
+  const [executionMode, setExecutionMode] = useState<RecurrenceExecutionMode>(
+    recurring?.executionMode ?? "manual",
+  );
+  const [backfill, setBackfill] = useState(false);
   const [notes, setNotes] = useState(recurring?.notes ?? "");
+
+  const isNew = !recurring;
+  const preview = useMemo(() => {
+    if (!isNew || !backfill || !startDate) return [];
+    const day = dayOfMonth ? Number(dayOfMonth) : null;
+    return occurrencesBetween(
+      { startDate, frequency, dayOfMonth: day, endDate: endDate || null },
+      todayISO(),
+    );
+  }, [isNew, backfill, startDate, frequency, dayOfMonth, endDate]);
+  const previewTotal = preview.length * (Number(amount) || 0);
+
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
