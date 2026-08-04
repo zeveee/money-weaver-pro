@@ -102,7 +102,38 @@ export interface Transaction {
   taxes: number;
   notes: string | null;
   metadata: Record<string, unknown>;
+  /** Regra recorrente que originou esta transação; null quando manual. */
+  recurringTransactionId: UUID | null;
 }
+
+export type RecurrenceFrequency =
+  | "weekly"
+  | "monthly"
+  | "quarterly"
+  | "semiannual"
+  | "annual";
+
+/**
+ * Instrução de reforço programado. Nunca é um facto financeiro:
+ * não entra em capital investido, rentabilidade ou XIRR.
+ */
+export interface RecurringTransaction {
+  id: UUID;
+  assetId: UUID;
+  type: TransactionType;
+  amount: number;
+  currency: CurrencyCode;
+  frequency: RecurrenceFrequency;
+  dayOfMonth: number | null;
+  startDate: ISODate;
+  endDate: ISODate | null;
+  isActive: boolean;
+  notes: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
 
 export interface AssetValuation {
   id: UUID;

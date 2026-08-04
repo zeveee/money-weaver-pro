@@ -13,6 +13,8 @@ export interface TransactionWriteInput {
   taxes?: number;
   notes?: string | null;
   metadata?: Record<string, unknown>;
+  /** Regra recorrente que originou a transação; null quando manual. */
+  recurringTransactionId?: string | null;
 }
 
 export async function listTransactions(assetId: string): Promise<Transaction[]> {
@@ -42,12 +44,14 @@ export async function createTransaction(
       taxes: input.taxes ?? 0,
       notes: input.notes ?? null,
       metadata: (input.metadata ?? {}) as never,
+      recurring_transaction_id: input.recurringTransactionId ?? null,
     })
     .select("*")
     .single();
   if (error) throw error;
   return toTransaction(data);
 }
+
 
 export async function updateTransaction(
   id: string,
@@ -66,7 +70,11 @@ export async function updateTransaction(
       taxes: input.taxes ?? 0,
       notes: input.notes ?? null,
       metadata: (input.metadata ?? {}) as never,
+      ...(input.recurringTransactionId === undefined
+        ? {}
+        : { recurring_transaction_id: input.recurringTransactionId }),
     })
+
     .eq("id", id)
     .select("*")
     .single();
