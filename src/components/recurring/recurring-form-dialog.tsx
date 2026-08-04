@@ -104,7 +104,9 @@ export function RecurringFormDialog({
       startDate,
       endDate: endDate || null,
       isActive,
+      executionMode,
       notes: notes.trim() || null,
+      ...(isNew ? { backfillHistory: backfill } : {}),
     });
   };
 
