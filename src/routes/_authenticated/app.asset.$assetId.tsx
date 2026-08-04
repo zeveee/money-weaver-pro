@@ -120,14 +120,16 @@ function AssetDetailPage() {
         </p>
       )}
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Valorações</CardTitle></CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          {profile.supportsValuations
-            ? "Estado atual do ativo virá da última valoração registada. Ainda por implementar."
-            : "Este tipo de ativo não usa valorações."}
-        </CardContent>
-      </Card>
+      {profile.supportsValuations ? (
+        <ValuationsSection asset={asset} />
+      ) : (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Valorações</CardTitle></CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Este tipo de ativo não usa valorações.
+          </CardContent>
+        </Card>
+      )}
 
     </div>
   );
