@@ -32,6 +32,15 @@ const money = (value: number, currency: string) => {
 
 const dateLabel = (iso: string) => new Date(iso).toLocaleDateString("pt-PT");
 
+const INCOME_KIND_LABEL: Record<string, string> = {
+  dividend: "Dividendos",
+  distribution: "Distribuições",
+  coupon: "Cupões",
+  interest: "Juros",
+  rent: "Rendas",
+};
+
+
 export function TransactionsSection({ asset }: { asset: Asset }) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
