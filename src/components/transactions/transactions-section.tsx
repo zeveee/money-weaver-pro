@@ -9,7 +9,10 @@ import {
 } from "@/domain/transaction-profiles";
 import { derivePosition, transactionTotals } from "@/services/transaction-metrics";
 import {
-  createTransaction, deleteTransaction, listTransactions, updateTransaction,
+  createTransaction,
+  deleteTransaction,
+  listTransactions,
+  updateTransaction,
   type TransactionWriteInput,
 } from "@/repositories/transactions";
 import { TransactionFormDialog } from "./transaction-form-dialog";
@@ -18,8 +21,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 const money = (value: number, currency: string) => {
@@ -40,7 +50,6 @@ const INCOME_KIND_LABEL: Record<string, string> = {
   rent: "Rendas",
 };
 
-
 export function TransactionsSection({ asset }: { asset: Asset }) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
@@ -54,31 +63,48 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["transactions", asset.id] });
 
   const createM = useMutation({
-    mutationFn: (input: TransactionWriteInput) => createTransaction({ ...input, assetId: asset.id }),
-    onSuccess: () => { invalidate(); setCreating(false); toast.success("Transação criada"); },
+    mutationFn: (input: TransactionWriteInput) =>
+      createTransaction({ ...input, assetId: asset.id }),
+    onSuccess: () => {
+      invalidate();
+      setCreating(false);
+      toast.success("Transação criada");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const updateM = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: TransactionWriteInput }) => updateTransaction(id, input),
-    onSuccess: () => { invalidate(); setEditing(null); toast.success("Transação atualizada"); },
+    mutationFn: ({ id, input }: { id: string; input: TransactionWriteInput }) =>
+      updateTransaction(id, input),
+    onSuccess: () => {
+      invalidate();
+      setEditing(null);
+      toast.success("Transação atualizada");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const deleteM = useMutation({
     mutationFn: (id: string) => deleteTransaction(id),
-    onSuccess: () => { invalidate(); toast.success("Transação eliminada"); },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Transação eliminada");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const totals = useMemo(() => transactionTotals(transactions), [transactions]);
-  const position = useMemo(() => derivePosition(asset.type, transactions), [asset.type, transactions]);
-
+  const position = useMemo(
+    () => derivePosition(asset.type, transactions),
+    [asset.type, transactions],
+  );
 
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-base">Transações</CardTitle>
         <Dialog open={creating} onOpenChange={setCreating}>
-          <DialogTrigger asChild><Button size="sm">Nova transação</Button></DialogTrigger>
+          <DialogTrigger asChild>
+            <Button size="sm">Nova transação</Button>
+          </DialogTrigger>
           <TransactionFormDialog
             title="Nova transação"
             assetType={asset.type}
@@ -91,12 +117,18 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
 
       <CardContent className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
-          <SummaryTile label="Capital investido" value={money(totals.investedCapital, asset.currency)} />
+          <SummaryTile
+            label="Capital investido"
+            value={money(totals.investedCapital, asset.currency)}
+          />
           <SummaryTile label="Total de entradas" value={money(totals.inflows, asset.currency)} />
           <SummaryTile label="Total de saídas" value={money(totals.outflows, asset.currency)} />
           {position.tracksQuantity && (
             <>
-              <SummaryTile label="Quantidade (derivada)" value={String(Number(position.quantity.toFixed(8)))} />
+              <SummaryTile
+                label="Quantidade (derivada)"
+                value={String(Number(position.quantity.toFixed(8)))}
+              />
               <SummaryTile
                 label="Custo médio (derivado)"
                 value={position.quantity > 0 ? money(position.averageCost, asset.currency) : "—"}
@@ -105,24 +137,30 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
           )}
           <SummaryTile label="Rendimentos" value={money(totals.income, asset.currency)} />
           <SummaryTile label="Custos" value={money(totals.costs, asset.currency)} />
-          <SummaryTile label="Mais-valia realizada" value={money(position.realizedGain, asset.currency)} />
+          <SummaryTile
+            label="Mais-valia realizada"
+            value={money(position.realizedGain, asset.currency)}
+          />
         </div>
 
         {Object.keys(totals.incomeByKind).length > 0 && (
           <p className="text-xs text-muted-foreground">
             Rendimento por natureza:{" "}
             {Object.entries(totals.incomeByKind)
-              .map(([kind, value]) => `${INCOME_KIND_LABEL[kind] ?? kind}: ${money(value, asset.currency)}`)
+              .map(
+                ([kind, value]) =>
+                  `${INCOME_KIND_LABEL[kind] ?? kind}: ${money(value, asset.currency)}`,
+              )
               .join(" · ")}
           </p>
         )}
-
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">A carregar transações…</p>
         ) : transactions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Ainda não existem transações. As transações são a fonte de verdade do histórico financeiro deste ativo.
+            Ainda não existem transações. As transações são a fonte de verdade do histórico
+            financeiro deste ativo.
           </p>
         ) : (
           <ul className="divide-y rounded-md border">
@@ -134,19 +172,22 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">{getTransactionLabel(asset.type, t.type)}</Badge>
-                      <span className="text-xs text-muted-foreground">{dateLabel(t.occurredAt)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {dateLabel(t.occurredAt)}
+                      </span>
                     </div>
                     <p className="text-sm">
                       {money(t.amount, t.currency)}
                       {withQty && t.quantity > 0 && (
-
                         <span className="text-muted-foreground">
-                          {" "}· {t.quantity} × {money(t.unitPrice, t.currency)}
+                          {" "}
+                          · {t.quantity} × {money(t.unitPrice, t.currency)}
                         </span>
                       )}
                       {(t.fees > 0 || t.taxes > 0) && (
                         <span className="text-muted-foreground">
-                          {" "}· custos {money(t.fees + t.taxes, t.currency)}
+                          {" "}
+                          · custos {money(t.fees + t.taxes, t.currency)}
                         </span>
                       )}
                     </p>
@@ -154,8 +195,15 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                   </div>
 
                   <div className="flex gap-2">
-                    <Dialog open={editing?.id === t.id} onOpenChange={(o) => setEditing(o ? t : null)}>
-                      <DialogTrigger asChild><Button variant="outline" size="sm">Editar</Button></DialogTrigger>
+                    <Dialog
+                      open={editing?.id === t.id}
+                      onOpenChange={(o) => setEditing(o ? t : null)}
+                    >
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Editar
+                        </Button>
+                      </DialogTrigger>
                       <TransactionFormDialog
                         title="Editar transação"
                         assetType={asset.type}
@@ -167,7 +215,9 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                     </Dialog>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">Eliminar</Button>
+                        <Button variant="ghost" size="sm">
+                          Eliminar
+                        </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
@@ -178,7 +228,9 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteM.mutate(t.id)}>Eliminar</AlertDialogAction>
+                          <AlertDialogAction onClick={() => deleteM.mutate(t.id)}>
+                            Eliminar
+                          </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>

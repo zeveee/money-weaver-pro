@@ -18,10 +18,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 
 const toLocalInput = (iso: string) => {
@@ -61,7 +69,12 @@ function initialValues(
 }
 
 export function TransactionFormDialog({
-  title, assetType, currency, transaction, onSubmit, loading,
+  title,
+  assetType,
+  currency,
+  transaction,
+  onSubmit,
+  loading,
 }: {
   title: string;
   assetType: AssetType;
@@ -133,10 +146,14 @@ export function TransactionFormDialog({
         <div className="space-y-2">
           <Label htmlFor="t-type">Tipo *</Label>
           <Select value={values.type} onValueChange={(v) => changeType(v as TransactionType)}>
-            <SelectTrigger id="t-type"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="t-type">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {options.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -158,7 +175,10 @@ export function TransactionFormDialog({
             <div className="space-y-2">
               <Label htmlFor="t-qty">Quantidade *</Label>
               <Input
-                id="t-qty" type="number" step="any" min={0}
+                id="t-qty"
+                type="number"
+                step="any"
+                min={0}
                 value={values.quantity}
                 onChange={(e) => set("quantity", e.target.value)}
               />
@@ -167,7 +187,10 @@ export function TransactionFormDialog({
           <div className="space-y-2">
             <Label htmlFor="t-amount">Montante total *</Label>
             <Input
-              id="t-amount" type="number" step="any" min={0}
+              id="t-amount"
+              type="number"
+              step="any"
+              min={0}
               value={values.amount}
               onChange={(e) => set("amount", e.target.value)}
             />
@@ -175,7 +198,9 @@ export function TransactionFormDialog({
           <div className="space-y-2">
             <Label htmlFor="t-currency">Moeda *</Label>
             <Input
-              id="t-currency" maxLength={3} value={values.currency}
+              id="t-currency"
+              maxLength={3}
+              value={values.currency}
               onChange={(e) => set("currency", e.target.value.toUpperCase())}
             />
           </div>
@@ -185,7 +210,10 @@ export function TransactionFormDialog({
           <div className="space-y-2">
             <Label htmlFor="t-fees">Comissões</Label>
             <Input
-              id="t-fees" type="number" step="any" min={0}
+              id="t-fees"
+              type="number"
+              step="any"
+              min={0}
               value={values.fees}
               onChange={(e) => set("fees", e.target.value)}
             />
@@ -193,7 +221,10 @@ export function TransactionFormDialog({
           <div className="space-y-2">
             <Label htmlFor="t-taxes">Impostos</Label>
             <Input
-              id="t-taxes" type="number" step="any" min={0}
+              id="t-taxes"
+              type="number"
+              step="any"
+              min={0}
               value={values.taxes}
               onChange={(e) => set("taxes", e.target.value)}
             />
@@ -208,7 +239,8 @@ export function TransactionFormDialog({
             </span>
             {(fees > 0 || taxes > 0) && (
               <>
-                {" "}· efetivo (com custos):{" "}
+                {" "}
+                · efetivo (com custos):{" "}
                 <span className="font-medium text-foreground">
                   {effectiveUnitPrice(profile.direction, amount, qty, fees, taxes).toFixed(4)}{" "}
                   {values.currency}
@@ -221,13 +253,17 @@ export function TransactionFormDialog({
         <div className="space-y-2">
           <Label htmlFor="t-notes">Notas</Label>
           <Textarea
-            id="t-notes" maxLength={1000} value={values.notes}
+            id="t-notes"
+            maxLength={1000}
+            value={values.notes}
             onChange={(e) => set("notes", e.target.value)}
           />
         </div>
 
         <DialogFooter>
-          <Button type="submit" disabled={loading}>{loading ? "A guardar…" : "Guardar"}</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "A guardar…" : "Guardar"}
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>

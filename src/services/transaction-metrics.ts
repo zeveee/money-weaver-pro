@@ -52,7 +52,8 @@ export function transactionTotals(transactions: Transaction[]): TransactionTotal
         break;
       case "income": {
         income += amount;
-        const kind = (t.metadata?.["incomeKind"] as IncomeKind | undefined) ?? inferIncomeKind(t.type);
+        const kind =
+          (t.metadata?.["incomeKind"] as IncomeKind | undefined) ?? inferIncomeKind(t.type);
         if (kind) incomeByKind[kind] = (incomeByKind[kind] ?? 0) + amount;
         break;
       }
@@ -99,10 +100,7 @@ export interface DerivedPosition {
  * Média móvel ponderada sobre as transações ordenadas cronologicamente.
  * Para ativos sem quantidade, `quantity` fica a 0 e o custo é o capital líquido investido.
  */
-export function derivePosition(
-  assetType: AssetType,
-  transactions: Transaction[],
-): DerivedPosition {
+export function derivePosition(assetType: AssetType, transactions: Transaction[]): DerivedPosition {
   const ordered = [...transactions].sort(
     (a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
   );

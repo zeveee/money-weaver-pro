@@ -36,18 +36,90 @@ export interface TransactionProfile {
 }
 
 export const TRANSACTION_PROFILES: Record<TransactionType, TransactionProfile> = {
-  buy: { type: "buy", label: "Compra", direction: "in", usesQuantity: true, affectsInvestedCapital: true },
-  sell: { type: "sell", label: "Venda", direction: "out", usesQuantity: true, affectsInvestedCapital: true },
-  deposit: { type: "deposit", label: "Depósito / Reforço", direction: "in", usesQuantity: false, affectsInvestedCapital: true },
-  withdrawal: { type: "withdrawal", label: "Levantamento / Resgate", direction: "out", usesQuantity: false, affectsInvestedCapital: true },
-  transfer_in: { type: "transfer_in", label: "Transferência de entrada", direction: "in", usesQuantity: false, affectsInvestedCapital: true },
-  transfer_out: { type: "transfer_out", label: "Transferência de saída", direction: "out", usesQuantity: false, affectsInvestedCapital: true },
-  dividend: { type: "dividend", label: "Dividendo", direction: "income", usesQuantity: false, affectsInvestedCapital: false },
-  interest: { type: "interest", label: "Juros", direction: "income", usesQuantity: false, affectsInvestedCapital: false },
-  coupon: { type: "coupon", label: "Cupão", direction: "income", usesQuantity: false, affectsInvestedCapital: false },
-  fee: { type: "fee", label: "Despesa", direction: "cost", usesQuantity: false, affectsInvestedCapital: false },
-  tax: { type: "tax", label: "Imposto", direction: "cost", usesQuantity: false, affectsInvestedCapital: false },
-  adjustment: { type: "adjustment", label: "Ajuste", direction: "neutral", usesQuantity: false, affectsInvestedCapital: false },
+  buy: {
+    type: "buy",
+    label: "Compra",
+    direction: "in",
+    usesQuantity: true,
+    affectsInvestedCapital: true,
+  },
+  sell: {
+    type: "sell",
+    label: "Venda",
+    direction: "out",
+    usesQuantity: true,
+    affectsInvestedCapital: true,
+  },
+  deposit: {
+    type: "deposit",
+    label: "Depósito / Reforço",
+    direction: "in",
+    usesQuantity: false,
+    affectsInvestedCapital: true,
+  },
+  withdrawal: {
+    type: "withdrawal",
+    label: "Levantamento / Resgate",
+    direction: "out",
+    usesQuantity: false,
+    affectsInvestedCapital: true,
+  },
+  transfer_in: {
+    type: "transfer_in",
+    label: "Transferência de entrada",
+    direction: "in",
+    usesQuantity: false,
+    affectsInvestedCapital: true,
+  },
+  transfer_out: {
+    type: "transfer_out",
+    label: "Transferência de saída",
+    direction: "out",
+    usesQuantity: false,
+    affectsInvestedCapital: true,
+  },
+  dividend: {
+    type: "dividend",
+    label: "Dividendo",
+    direction: "income",
+    usesQuantity: false,
+    affectsInvestedCapital: false,
+  },
+  interest: {
+    type: "interest",
+    label: "Juros",
+    direction: "income",
+    usesQuantity: false,
+    affectsInvestedCapital: false,
+  },
+  coupon: {
+    type: "coupon",
+    label: "Cupão",
+    direction: "income",
+    usesQuantity: false,
+    affectsInvestedCapital: false,
+  },
+  fee: {
+    type: "fee",
+    label: "Despesa",
+    direction: "cost",
+    usesQuantity: false,
+    affectsInvestedCapital: false,
+  },
+  tax: {
+    type: "tax",
+    label: "Imposto",
+    direction: "cost",
+    usesQuantity: false,
+    affectsInvestedCapital: false,
+  },
+  adjustment: {
+    type: "adjustment",
+    label: "Ajuste",
+    direction: "neutral",
+    usesQuantity: false,
+    affectsInvestedCapital: false,
+  },
 };
 
 export const getTransactionProfile = (t: TransactionType): TransactionProfile =>
@@ -69,8 +141,16 @@ const tradedIncome = (
   incomeKind: IncomeKind,
 ): TransactionOption => ({ type, label, usesQuantity: false, incomeKind });
 
-const buy = (label = "Compra", usesQuantity = true): TransactionOption => ({ type: "buy", label, usesQuantity });
-const sell = (label = "Venda", usesQuantity = true): TransactionOption => ({ type: "sell", label, usesQuantity });
+const buy = (label = "Compra", usesQuantity = true): TransactionOption => ({
+  type: "buy",
+  label,
+  usesQuantity,
+});
+const sell = (label = "Venda", usesQuantity = true): TransactionOption => ({
+  type: "sell",
+  label,
+  usesQuantity,
+});
 
 /**
  * Matriz AssetType → movimentos disponíveis.
@@ -81,7 +161,11 @@ const sell = (label = "Venda", usesQuantity = true): TransactionOption => ({ typ
 export const TRANSACTION_MATRIX: Record<AssetType, TransactionOption[]> = {
   etf: [buy(), sell(), tradedIncome("dividend", "Dividendo", "dividend")],
   stock: [buy(), sell(), tradedIncome("dividend", "Dividendo", "dividend")],
-  fund: [buy("Subscrição"), sell("Resgate"), tradedIncome("dividend", "Distribuição", "distribution")],
+  fund: [
+    buy("Subscrição"),
+    sell("Resgate"),
+    tradedIncome("dividend", "Distribuição", "distribution"),
+  ],
   bond: [buy(), sell(), tradedIncome("coupon", "Cupão", "coupon")],
   crypto: [
     buy(),
@@ -129,8 +213,7 @@ export const getTransactionTypes = (assetType: AssetType): TransactionType[] =>
 export const getTransactionOption = (
   assetType: AssetType,
   type: TransactionType,
-): TransactionOption | undefined =>
-  getTransactionOptions(assetType).find((o) => o.type === type);
+): TransactionOption | undefined => getTransactionOptions(assetType).find((o) => o.type === type);
 
 /** Rótulo contextual (ex.: dividend → "Renda" em imobiliário). */
 export const getTransactionLabel = (assetType: AssetType, type: TransactionType): string =>
@@ -184,20 +267,25 @@ export function validateTransactionForm(
     return { ok: false, message: "Tipo de transação não suportado por este ativo." };
   }
   if (!v.occurredAt) return { ok: false, message: "A data da transação é obrigatória." };
-  if (!/^[A-Z]{3}$/.test(v.currency)) return { ok: false, message: "Moeda deve ser ISO 4217 (ex.: EUR)." };
+  if (!/^[A-Z]{3}$/.test(v.currency))
+    return { ok: false, message: "Moeda deve ser ISO 4217 (ex.: EUR)." };
 
   const num = (s: string) => (s === "" ? NaN : Number(s));
 
   if (usesQuantity(assetType, v.type)) {
     const q = num(v.quantity);
-    if (!Number.isFinite(q) || q <= 0) return { ok: false, message: "Quantidade deve ser maior que zero." };
+    if (!Number.isFinite(q) || q <= 0)
+      return { ok: false, message: "Quantidade deve ser maior que zero." };
   }
 
   const amount = num(v.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
     return { ok: false, message: "O montante deve ser maior que zero." };
   }
-  for (const [key, label] of [["fees", "Comissões"], ["taxes", "Impostos"]] as const) {
+  for (const [key, label] of [
+    ["fees", "Comissões"],
+    ["taxes", "Impostos"],
+  ] as const) {
     const raw = v[key];
     if (raw !== "" && (!Number.isFinite(Number(raw)) || Number(raw) < 0)) {
       return { ok: false, message: `${label} inválidos.` };
