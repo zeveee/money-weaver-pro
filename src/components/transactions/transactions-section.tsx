@@ -2,8 +2,12 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Asset, Transaction } from "@/domain/types";
-import { getTransactionProfile } from "@/domain/transaction-profiles";
-import { transactionTotals } from "@/services/transaction-metrics";
+import {
+  getTransactionLabel,
+  getTransactionProfile,
+  usesQuantity as usesQuantityFor,
+} from "@/domain/transaction-profiles";
+import { derivePosition, transactionTotals } from "@/services/transaction-metrics";
 import {
   createTransaction, deleteTransaction, listTransactions, updateTransaction,
   type TransactionWriteInput,
