@@ -70,7 +70,11 @@ export async function updateTransaction(
       taxes: input.taxes ?? 0,
       notes: input.notes ?? null,
       metadata: (input.metadata ?? {}) as never,
+      ...(input.recurringTransactionId === undefined
+        ? {}
+        : { recurring_transaction_id: input.recurringTransactionId }),
     })
+
     .eq("id", id)
     .select("*")
     .single();
