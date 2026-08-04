@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 import { TransactionsSection } from "@/components/transactions/transactions-section";
 import { RecurringSection } from "@/components/recurring/recurring-section";
+import { ValuationsSection } from "@/components/valuations/valuations-section";
 import { listTransactions } from "@/repositories/transactions";
 import { formatDateLabel } from "@/lib/date-format";
 
@@ -120,14 +121,16 @@ function AssetDetailPage() {
         </p>
       )}
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Valorações</CardTitle></CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          {profile.supportsValuations
-            ? "Estado atual do ativo virá da última valoração registada. Ainda por implementar."
-            : "Este tipo de ativo não usa valorações."}
-        </CardContent>
-      </Card>
+      {profile.supportsValuations ? (
+        <ValuationsSection asset={asset} />
+      ) : (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Valorações</CardTitle></CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Este tipo de ativo não usa valorações.
+          </CardContent>
+        </Card>
+      )}
 
     </div>
   );

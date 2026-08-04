@@ -439,3 +439,40 @@ export function validateAssetForm(
 
   return { ok: true };
 }
+
+// ---------- Valuations (declarativo por AssetType) ----------
+
+/**
+ * Modo de entrada de uma valorização:
+ * - `unit_price`: o utilizador introduz o preço por unidade; o total deriva da quantidade.
+ * - `total_value`: o utilizador introduz diretamente o valor total (sem unidades).
+ */
+export type ValuationMode = "unit_price" | "total_value";
+
+export interface ValuationSpec {
+  mode: ValuationMode;
+  /** Rótulo do campo principal introduzido pelo utilizador. */
+  label: string;
+  /** Rótulo do valor total do ativo à data. */
+  totalLabel: string;
+  help?: string;
+}
+
+export const VALUATION_SPECS: Record<AssetType, ValuationSpec> = {
+  etf: { mode: "unit_price", label: "Preço por unidade", totalLabel: "Valor de mercado" },
+  stock: { mode: "unit_price", label: "Cotação por ação", totalLabel: "Valor de mercado" },
+  fund: { mode: "unit_price", label: "NAV por unidade de participação", totalLabel: "Valor de mercado" },
+  bond: { mode: "unit_price", label: "Preço por obrigação", totalLabel: "Valor de mercado" },
+  crypto: { mode: "unit_price", label: "Preço por unidade", totalLabel: "Valor de mercado" },
+  commodity: { mode: "unit_price", label: "Preço por unidade", totalLabel: "Valor de mercado" },
+  ppr: { mode: "total_value", label: "Valor atual do plano", totalLabel: "Valor atual" },
+  capitalization_insurance: {
+    mode: "total_value",
+    label: "Valor atual do contrato",
+    totalLabel: "Valor do contrato",
+  },
+  real_estate: { mode: "total_value", label: "Valor de mercado", totalLabel: "Valor de mercado" },
+  cash: { mode: "total_value", label: "Saldo", totalLabel: "Saldo" },
+};
+
+export const getValuationSpec = (type: AssetType): ValuationSpec => VALUATION_SPECS[type];
