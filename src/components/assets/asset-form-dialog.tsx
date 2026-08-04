@@ -67,7 +67,6 @@ export function AssetFormDialog({
 
   const profile = getAssetProfile(type);
   const fields = useMemo(() => getAssetFields(type), [type]);
-  const recurringOn = Boolean(values["recurring.enabled"]);
 
   const changeType = (next: AssetType) => {
     setType(next);
@@ -100,8 +99,6 @@ export function AssetFormDialog({
         else if (f.key === "isin") input.isin = value as string | null;
         else if (f.key === "notes") input.notes = value as string | null;
         else if (f.key === "acquiredAt") input.acquiredAt = value as string | null;
-      } else if (f.key.startsWith("recurring.") && !recurringOn) {
-        setPath(metadata, f.key, f.key === "recurring.enabled" ? false : null);
       } else {
         setPath(metadata, f.key, value);
       }
@@ -130,15 +127,13 @@ export function AssetFormDialog({
           </Select>
         </div>
 
-        {fields.map((f) => {
-          if (f.key.startsWith("recurring.") && f.key !== "recurring.enabled" && !recurringOn) return null;
-          return (
-            <FieldControl key={f.key} field={f} value={values[f.key]} onChange={(v) => set(f.key, v)} />
-          );
-        })}
+        {fields.map((f) => (
+          <FieldControl key={f.key} field={f} value={values[f.key]} onChange={(v) => set(f.key, v)} />
+        ))}
 
         <p className="text-xs text-muted-foreground">
-          Quantidade, custo médio e valor atual são derivados de transações e valorações — não se introduzem aqui.
+          Quantidade, custo médio, valor atual e data de aquisição são derivados de transações e
+          valorações — não se introduzem aqui. Os reforços programados são geridos no detalhe do ativo.
         </p>
 
         <DialogFooter>
