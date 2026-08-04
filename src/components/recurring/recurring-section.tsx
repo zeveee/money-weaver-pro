@@ -291,6 +291,23 @@ export function RecurringSection({ asset }: { asset: Asset }) {
                       )}
                     </div>
                   )}
+
+                  {dismissed.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed p-2">
+                      <p className="text-xs text-muted-foreground">
+                        {dismissed.length} ocorrência(s) dispensada(s)
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2"
+                        disabled={restoreM.isPending}
+                        onClick={() => restoreM.mutate({ id: r.id, dates: dismissed })}
+                      >
+                        Repor
+                      </Button>
+                    </div>
+                  )}
                 </li>
               );
             })}
