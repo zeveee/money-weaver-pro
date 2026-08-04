@@ -4,13 +4,14 @@ import { toast } from "sonner";
 import type { Asset, RecurringTransaction } from "@/domain/types";
 import { getTransactionLabel } from "@/domain/transaction-profiles";
 import { listTransactions } from "@/repositories/transactions";
-import { nextOccurrence, pendingOccurrences, todayISO } from "@/services/recurrence";
+import { dismissedDates, nextOccurrence, pendingOccurrences, todayISO } from "@/services/recurrence";
 import {
   createRecurringTransaction,
   deleteRecurringTransaction,
+  dismissOccurrences,
   generateOccurrences,
   listRecurringTransactions,
-  markGeneratedUpTo,
+  restoreOccurrences,
   updateRecurringTransaction,
   type RecurringWriteInput,
 } from "@/repositories/recurring-transactions";
@@ -104,10 +105,21 @@ export function RecurringSection({ asset }: { asset: Asset }) {
     onError: (e: Error) => toast.error(e.message),
   });
   const dismissM = useMutation({
-    mutationFn: ({ id, date }: { id: string; date: string }) => markGeneratedUpTo(id, date),
+    mutationFn: ({ id, dates }: { id: string; dates: string[] }) =>
+      dismissOccurrences(id, dates),
+    onSuccess: (_data, vars) => {
+      invalidate();
+      toast.success(
+        vars.dates.length === 1 ? "Ocorrência dispensada" : `${vars.dates.length} ocorrências dispensadas`,
+      );
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const restoreM = useMutation({
+    mutationFn: ({ id, dates }: { id: string; dates: string[] }) => restoreOccurrences(id, dates),
     onSuccess: () => {
       invalidate();
-      toast.success("Ocorrência dispensada");
+      toast.success("Ocorrências repostas");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -159,6 +171,7 @@ export function RecurringSection({ asset }: { asset: Asset }) {
           <ul className="divide-y rounded-md border">
             {rules.map((r) => {
               const pending = pendingOccurrences(r, transactions);
+              const dismissed = dismissedDates(r);
               const next = r.isActive ? nextOccurrence(r, todayISO()) : null;
               return (
                 <li key={r.id} className="space-y-3 p-3">
@@ -243,7 +256,7 @@ export function RecurringSection({ asset }: { asset: Asset }) {
                               variant="ghost"
                               disabled={dismissM.isPending}
                               onClick={() =>
-                                dismissM.mutate({ id: r.id, date: pending[pending.length - 1]! })
+                                dismissM.mutate({ id: r.id, dates: pending })
                               }
                             >
                               Dispensar todas
@@ -271,7 +284,7 @@ export function RecurringSection({ asset }: { asset: Asset }) {
                                   variant="ghost"
                                   className="h-7 px-2"
                                   disabled={dismissM.isPending}
-                                  onClick={() => dismissM.mutate({ id: r.id, date: d })}
+                                  onClick={() => dismissM.mutate({ id: r.id, dates: [d] })}
                                 >
                                   Dispensar
                                 </Button>
@@ -285,6 +298,23 @@ export function RecurringSection({ asset }: { asset: Asset }) {
                           )}
                         </ul>
                       )}
+                    </div>
+                  )}
+
+                  {dismissed.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed p-2">
+                      <p className="text-xs text-muted-foreground">
+                        {dismissed.length} ocorrência(s) dispensada(s)
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2"
+                        disabled={restoreM.isPending}
+                        onClick={() => restoreM.mutate({ id: r.id, dates: dismissed })}
+                      >
+                        Repor
+                      </Button>
                     </div>
                   )}
                 </li>

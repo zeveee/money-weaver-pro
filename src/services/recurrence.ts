@@ -78,9 +78,16 @@ export function nextOccurrence(rule: OccurrenceWindow, from: string): string | n
 
 export const todayISO = () => new Date().toISOString().slice(0, 10);
 
+/** Datas explicitamente dispensadas, guardadas nos metadados da regra. */
+export function dismissedDates(rule: Pick<RecurringTransaction, "metadata">): string[] {
+  const raw = (rule.metadata as Record<string, unknown> | null)?.["dismissedDates"];
+  return Array.isArray(raw) ? raw.filter((d): d is string => typeof d === "string") : [];
+}
+
 /**
- * Ocorrências ainda não materializadas: previstas até `upTo`, posteriores à
- * marca `lastGeneratedOn`, e sem transação já ligada à regra nessa data.
+ * Ocorrências ainda por processar: previstas até `upTo`, a partir da âncora
+ * `lastGeneratedOn` (limite inferior fixo da regra), sem transação já ligada à
+ * regra nessa data e não dispensadas individualmente.
  */
 export function pendingOccurrences(
   rule: RecurringTransaction,
@@ -93,7 +100,9 @@ export function pendingOccurrences(
       .filter((t) => t.recurringTransactionId === rule.id)
       .map((t) => t.occurredAt.slice(0, 10)),
   );
+  const dismissed = new Set(dismissedDates(rule));
   return occurrencesBetween(rule, upTo, rule.lastGeneratedOn ?? null).filter(
-    (d) => !taken.has(d),
+    (d) => !taken.has(d) && !dismissed.has(d),
   );
 }
+
