@@ -1,4 +1,4 @@
-# Recurring Transactions: modos de execução, histórico e geração
+Recurring Transactions: modos de execução, histórico e geração
 
 ## Comportamento recomendado
 
@@ -9,12 +9,14 @@ Manter a separação atual e acrescentar **duas propriedades à regra**: modo de
 - **Ocorrência pendente** = valor calculado em memória (data prevista sem transação correspondente). Não é persistida.
 
 ### Modo Manual
+
 - O sistema calcula as datas previstas até hoje e mostra-as como *pendentes* na secção do ativo.
 - Nada existe na base de dados até o utilizador confirmar.
 - Confirmar cria uma `transaction` normal com `recurring_transaction_id` preenchido; a data pode ser ajustada antes de confirmar.
 - Ignorar/dispensar uma ocorrência: marca-se avançando `last_generated_on` sem criar transação.
 
 ### Modo Automático
+
 - Destinado a débitos diretos. A geração corre, sem confirmação, quando o utilizador abre o ativo (recuperação idempotente) e, mais tarde, por um job diário `pg_cron`.
 - Cria `transactions` para todas as datas previstas entre `last_generated_on` (ou `start_date`) e hoje.
 - Idempotência garantida por índice único parcial `(recurring_transaction_id, occurred_at)` — reabrir a página nunca duplica.
@@ -31,6 +33,7 @@ Exemplo 50 €/mês desde 23/07/2025 até 04/08/2026: 13 ocorrências, 650 € d
 As transações geradas são transações comuns: editáveis, elimináveis, contam para capital investido, rentabilidade e XIRR. Eliminar uma transação gerada não a faz reaparecer (a marca `last_generated_on` já avançou); recriar exige "gerar novamente" explícito.
 
 ### Calendário de ocorrências
+
 - `weekly`: de 7 em 7 dias a partir de `start_date`.
 - `monthly` / `quarterly` / `semiannual` / `annual`: mesmo dia do mês de `start_date`, ou `day_of_month` quando definido; dias 29–31 em meses curtos caem no último dia do mês.
 - Nunca gera para lá de `end_date` nem enquanto `is_active = false`.
@@ -84,6 +87,7 @@ Migration mínima (necessária — não há onde guardar o modo de forma consult
 Sem novas tabelas, sem alterações a RLS (herdada por `asset → portfolio → owns_portfolio`).
 
 Código:
+
 - `src/services/recurrence.ts` — motor puro de datas (ocorrências previstas, próxima data, pendentes por diferença com transações existentes).
 - `src/repositories/recurring-transactions.ts` — campos novos + `generateOccurrences(rule, upTo)` com insert em bloco.
 - `src/domain/types.ts`, `src/repositories/mapping.ts` — `executionMode`, `lastGeneratedOn`.
