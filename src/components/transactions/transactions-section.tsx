@@ -60,7 +60,9 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const totals = useMemo(() => transactionTotals(transactions), [transactions]);
   const position = useMemo(() => derivePosition(asset.type, transactions), [asset.type, transactions]);
+
 
   return (
     <Card>
