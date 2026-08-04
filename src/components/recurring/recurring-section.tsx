@@ -39,7 +39,7 @@ const money = (value: number, currency: string) => {
   }
 };
 
-const dateLabel = (iso: string) => new Date(iso).toLocaleDateString("pt-PT");
+const dateLabel = (iso: string) => formatDateLabel(iso);
 const freqLabel = (f: string) => FREQUENCY_OPTIONS.find((o) => o.value === f)?.label ?? f;
 
 export function RecurringSection({ asset }: { asset: Asset }) {

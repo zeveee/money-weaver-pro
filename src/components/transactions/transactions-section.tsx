@@ -40,7 +40,7 @@ const money = (value: number, currency: string) => {
   }
 };
 
-const dateLabel = (iso: string) => new Date(iso).toLocaleDateString("pt-PT");
+const dateLabel = (iso: string) => formatDateLabel(iso);
 
 const INCOME_KIND_LABEL: Record<string, string> = {
   dividend: "Dividendos",

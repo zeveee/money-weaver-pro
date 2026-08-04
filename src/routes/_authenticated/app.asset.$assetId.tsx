@@ -99,7 +99,7 @@ function AssetDetailPage() {
             <div>
               <dt className="text-xs text-muted-foreground">Data de aquisição (derivada)</dt>
               <dd className="text-sm">
-                {acquiredAt ? new Date(acquiredAt).toLocaleDateString("pt-PT") : "—"}
+                {acquiredAt ? formatDateLabel(acquiredAt) : "—"}
               </dd>
             </div>
           </dl>
