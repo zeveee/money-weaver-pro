@@ -72,7 +72,6 @@ export const COMMON_FIELDS: AssetFieldSpec[] = [
     validate: (v) =>
       ISO_CURRENCY.test(String(v ?? "")) ? null : "Moeda deve ser ISO 4217 (ex.: EUR)",
   },
-  { key: "acquiredAt", label: "Data de aquisição", kind: "date", target: "column" },
   { key: "notes", label: "Notas", kind: "textarea", target: "column", maxLength: 1000 },
 ];
 
@@ -107,44 +106,6 @@ const marketIdentifiers: AssetFieldSpec[] = [
   { key: "broker", label: "Corretora / Custódia", kind: "text", target: "metadata", maxLength: 80 },
 ];
 
-const RECURRING_FIELDS: AssetFieldSpec[] = [
-  {
-    key: "recurring.enabled",
-    label: "Contribuição recorrente",
-    kind: "checkbox",
-    target: "metadata",
-    help: "Instrução declarativa — não gera transações futuras automaticamente.",
-  },
-  {
-    key: "recurring.amount",
-    label: "Valor da contribuição",
-    kind: "number",
-    target: "metadata",
-    min: 0,
-    step: 0.01,
-  },
-  {
-    key: "recurring.frequency",
-    label: "Frequência",
-    kind: "select",
-    target: "metadata",
-    options: [
-      { value: "monthly", label: "Mensal" },
-      { value: "quarterly", label: "Trimestral" },
-      { value: "semiannual", label: "Semestral" },
-      { value: "annual", label: "Anual" },
-    ],
-  },
-  {
-    key: "recurring.dayOfExecution",
-    label: "Dia de execução",
-    kind: "number",
-    target: "metadata",
-    min: 1,
-    max: 31,
-    step: 1,
-  },
-];
 
 /**
  * Os tipos de transação por AssetType são definidos na matriz declarativa em
@@ -224,7 +185,6 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
         max: 5,
         step: 0.01,
       },
-      ...RECURRING_FIELDS,
     ],
     transactionTypes: txFor("fund"),
     supportsValuations: true,
@@ -246,7 +206,6 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
         target: "metadata",
         maxLength: 60,
       },
-      ...RECURRING_FIELDS,
     ],
     // Modelo simplificado: entradas e saídas de capital.
     transactionTypes: txFor("ppr"),
@@ -279,7 +238,6 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
         min: 0,
         step: 0.01,
       },
-      ...RECURRING_FIELDS,
     ],
     transactionTypes: txFor("capitalization_insurance"),
     supportsValuations: true,
@@ -451,10 +409,7 @@ export const getAssetProfile = (type: AssetType): AssetProfile => ASSET_PROFILES
 /** Campos visíveis (comuns + específicos) para um tipo, já ordenados. */
 export function getAssetFields(type: AssetType): AssetFieldSpec[] {
   const profile = getAssetProfile(type);
-  const specific = profile.supportsRecurring
-    ? profile.fields
-    : profile.fields.filter((f) => !f.key.startsWith("recurring."));
-  return [...COMMON_FIELDS.slice(0, 2), ...specific, ...COMMON_FIELDS.slice(2)];
+  return [...COMMON_FIELDS.slice(0, 2), ...profile.fields, ...COMMON_FIELDS.slice(2)];
 }
 
 /** Validação declarativa de um formulário de ativo. */
@@ -482,14 +437,5 @@ export function validateAssetForm(
     if (custom) return { ok: false, message: custom };
   }
 
-  const profile = getAssetProfile(type);
-  if (profile.supportsRecurring && values["recurring.enabled"]) {
-    if (!values["recurring.amount"])
-      return { ok: false, message: "Valor da contribuição recorrente é obrigatório" };
-    if (!values["recurring.frequency"])
-      return { ok: false, message: "Frequência da contribuição é obrigatória" };
-    if (!values["recurring.dayOfExecution"])
-      return { ok: false, message: "Dia de execução é obrigatório" };
-  }
   return { ok: true };
 }
