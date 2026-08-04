@@ -9,6 +9,7 @@ import type {
 } from "@/domain/types";
 import { getTransactionProfile, getTransactionTypeOptions } from "@/domain/transaction-profiles";
 import { occurrencesBetween, todayISO } from "@/services/recurrence";
+import { formatDateLabel } from "@/lib/date-format";
 import type { RecurringWriteInput } from "@/repositories/recurring-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
