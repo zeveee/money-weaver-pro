@@ -128,6 +128,10 @@ export interface RecurringTransaction {
   startDate: ISODate;
   endDate: ISODate | null;
   isActive: boolean;
+  /** Manual: gera ocorrências pendentes. Automático: cria transações sozinho. */
+  executionMode: RecurrenceExecutionMode;
+  /** Marca da última ocorrência processada (gerada ou dispensada). */
+  lastGeneratedOn: ISODate | null;
   notes: string | null;
   metadata: Record<string, unknown>;
   createdAt: ISODateTime;
