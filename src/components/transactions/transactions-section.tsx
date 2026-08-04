@@ -85,7 +85,29 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
           <SummaryTile label="Capital investido" value={money(totals.investedCapital, asset.currency)} />
           <SummaryTile label="Total de entradas" value={money(totals.inflows, asset.currency)} />
           <SummaryTile label="Total de saídas" value={money(totals.outflows, asset.currency)} />
+          {position.tracksQuantity && (
+            <>
+              <SummaryTile label="Quantidade (derivada)" value={String(Number(position.quantity.toFixed(8)))} />
+              <SummaryTile
+                label="Custo médio (derivado)"
+                value={position.quantity > 0 ? money(position.averageCost, asset.currency) : "—"}
+              />
+            </>
+          )}
+          <SummaryTile label="Rendimentos" value={money(totals.income, asset.currency)} />
+          <SummaryTile label="Custos" value={money(totals.costs, asset.currency)} />
+          <SummaryTile label="Mais-valia realizada" value={money(position.realizedGain, asset.currency)} />
         </div>
+
+        {Object.keys(totals.incomeByKind).length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Rendimento por natureza:{" "}
+            {Object.entries(totals.incomeByKind)
+              .map(([kind, value]) => `${INCOME_KIND_LABEL[kind] ?? kind}: ${money(value, asset.currency)}`)
+              .join(" · ")}
+          </p>
+        )}
+
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">A carregar transações…</p>
