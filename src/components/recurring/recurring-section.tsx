@@ -4,13 +4,14 @@ import { toast } from "sonner";
 import type { Asset, RecurringTransaction } from "@/domain/types";
 import { getTransactionLabel } from "@/domain/transaction-profiles";
 import { listTransactions } from "@/repositories/transactions";
-import { nextOccurrence, pendingOccurrences, todayISO } from "@/services/recurrence";
+import { dismissedDates, nextOccurrence, pendingOccurrences, todayISO } from "@/services/recurrence";
 import {
   createRecurringTransaction,
   deleteRecurringTransaction,
   dismissOccurrences,
   generateOccurrences,
   listRecurringTransactions,
+  restoreOccurrences,
   updateRecurringTransaction,
   type RecurringWriteInput,
 } from "@/repositories/recurring-transactions";
