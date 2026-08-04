@@ -85,7 +85,28 @@ export const toTransaction = (r: Row): Transaction => ({
   taxes: Number(r.taxes ?? 0),
   notes: (r.notes as string) ?? null,
   metadata: (r.metadata as Record<string, unknown>) ?? {},
+  recurringTransactionId: (r.recurring_transaction_id as string) ?? null,
 });
+
+export const toRecurringTransaction = (
+  r: Row,
+): import("@/domain/types").RecurringTransaction => ({
+  id: r.id as string,
+  assetId: r.asset_id as string,
+  type: r.type as Transaction["type"],
+  amount: Number(r.amount ?? 0),
+  currency: r.currency as string,
+  frequency: r.frequency as import("@/domain/types").RecurrenceFrequency,
+  dayOfMonth: r.day_of_month == null ? null : Number(r.day_of_month),
+  startDate: r.start_date as string,
+  endDate: (r.end_date as string) ?? null,
+  isActive: Boolean(r.is_active),
+  notes: (r.notes as string) ?? null,
+  metadata: (r.metadata as Record<string, unknown>) ?? {},
+  createdAt: r.created_at as string,
+  updatedAt: r.updated_at as string,
+});
+
 
 export const toValuation = (r: Row): AssetValuation => ({
   id: r.id as string,
