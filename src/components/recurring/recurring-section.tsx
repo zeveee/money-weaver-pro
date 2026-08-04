@@ -115,6 +115,14 @@ export function RecurringSection({ asset }: { asset: Asset }) {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+  const restoreM = useMutation({
+    mutationFn: ({ id, dates }: { id: string; dates: string[] }) => restoreOccurrences(id, dates),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Ocorrências repostas");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   // Recuperação idempotente das regras automáticas ao abrir o ativo.
   useEffect(() => {
