@@ -128,16 +128,18 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
           <ul className="divide-y rounded-md border">
             {transactions.map((t) => {
               const profile = getTransactionProfile(t.type);
+              const withQty = usesQuantityFor(asset.type, t.type);
               return (
                 <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary">{profile.label}</Badge>
+                      <Badge variant="secondary">{getTransactionLabel(asset.type, t.type)}</Badge>
                       <span className="text-xs text-muted-foreground">{dateLabel(t.occurredAt)}</span>
                     </div>
                     <p className="text-sm">
                       {money(t.amount, t.currency)}
-                      {profile.usesQuantity && t.quantity > 0 && (
+                      {withQty && t.quantity > 0 && (
+
                         <span className="text-muted-foreground">
                           {" "}· {t.quantity} × {money(t.unitPrice, t.currency)}
                         </span>
