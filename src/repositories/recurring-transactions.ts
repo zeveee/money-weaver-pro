@@ -93,14 +93,68 @@ export async function deleteRecurringTransaction(id: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Avança a marca de processamento sem criar transações (dispensar ocorrências). */
-export async function markGeneratedUpTo(
+/**
+ * Dispensa ocorrências individuais: regista as datas nos metadados da regra.
+ * Não mexe na âncora `last_generated_on` nem afeta outras ocorrências.
+ */
+export async function dismissOccurrences(
   id: string,
-  date: string,
+  dates: string[],
 ): Promise<RecurringTransaction> {
+  const { data: current, error: readError } = await supabase
+    .from("recurring_transactions")
+    .select("metadata")
+    .eq("id", id)
+    .single();
+  if (readError) throw readError;
+
+  const existing = Array.isArray(
+    (current?.metadata as Record<string, unknown> | null)?.["dismissedDates"],
+  )
+    ? ((current!.metadata as Record<string, unknown>)["dismissedDates"] as unknown[]).filter(
+        (d): d is string => typeof d === "string",
+      )
+    : [];
+  const merged = Array.from(new Set([...existing, ...dates])).sort();
+
   const { data, error } = await supabase
     .from("recurring_transactions")
-    .update({ last_generated_on: date })
+    .update({
+      metadata: {
+        ...((current?.metadata as Record<string, unknown>) ?? {}),
+        dismissedDates: merged,
+      } as never,
+    })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return toRecurringTransaction(data);
+}
+
+/** Repõe ocorrências dispensadas como pendentes. */
+export async function restoreOccurrences(
+  id: string,
+  dates: string[],
+): Promise<RecurringTransaction> {
+  const { data: current, error: readError } = await supabase
+    .from("recurring_transactions")
+    .select("metadata")
+    .eq("id", id)
+    .single();
+  if (readError) throw readError;
+
+  const meta = (current?.metadata as Record<string, unknown>) ?? {};
+  const existing = Array.isArray(meta["dismissedDates"])
+    ? (meta["dismissedDates"] as unknown[]).filter((d): d is string => typeof d === "string")
+    : [];
+  const remove = new Set(dates);
+
+  const { data, error } = await supabase
+    .from("recurring_transactions")
+    .update({
+      metadata: { ...meta, dismissedDates: existing.filter((d) => !remove.has(d)) } as never,
+    })
     .eq("id", id)
     .select("*")
     .single();
@@ -143,9 +197,8 @@ export async function generateOccurrences(
     .select("*");
   if (error) throw error;
 
-  const latest = targets[targets.length - 1]!;
-  if (!rule.lastGeneratedOn || latest > rule.lastGeneratedOn) {
-    await markGeneratedUpTo(rule.id, latest);
-  }
+  // A confirmação fica evidenciada pelas transações criadas; a âncora
+  // `last_generated_on` não avança, para não ocultar ocorrências anteriores.
   return (data ?? []).map(toTransaction);
 }
+
