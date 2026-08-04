@@ -8,9 +8,9 @@ import { nextOccurrence, pendingOccurrences, todayISO } from "@/services/recurre
 import {
   createRecurringTransaction,
   deleteRecurringTransaction,
+  dismissOccurrences,
   generateOccurrences,
   listRecurringTransactions,
-  markGeneratedUpTo,
   updateRecurringTransaction,
   type RecurringWriteInput,
 } from "@/repositories/recurring-transactions";
