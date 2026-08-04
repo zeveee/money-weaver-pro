@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 import { TransactionsSection } from "@/components/transactions/transactions-section";
+import { RecurringSection } from "@/components/recurring/recurring-section";
+import { listTransactions } from "@/repositories/transactions";
 
 
 export const Route = createFileRoute("/_authenticated/app/asset/$assetId")({
@@ -32,11 +34,22 @@ function AssetDetailPage() {
     enabled: !!asset?.portfolioId,
   });
 
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["transactions", assetId],
+    queryFn: () => listTransactions(assetId),
+    enabled: !!assetId,
+  });
+
   if (isLoading) return <p className="text-sm text-muted-foreground">A carregar…</p>;
   if (!asset) return <p className="text-sm text-muted-foreground">Ativo não encontrado.</p>;
 
   const profile = getAssetProfile(asset.type);
   const fields = getAssetFields(asset.type).filter((f) => f.key !== "name");
+
+  const acquiredAt = transactions
+    .filter((t) => ["buy", "deposit", "transfer_in"].includes(t.type))
+    .map((t) => t.occurredAt)
+    .sort()[0];
 
   return (
     <div className="space-y-6">
@@ -83,11 +96,22 @@ function AssetDetailPage() {
                 </div>
               );
             })}
+            <div>
+              <dt className="text-xs text-muted-foreground">Data de aquisição (derivada)</dt>
+              <dd className="text-sm">
+                {acquiredAt ? new Date(acquiredAt).toLocaleDateString("pt-PT") : "—"}
+              </dd>
+            </div>
           </dl>
+          <p className="mt-3 text-xs text-muted-foreground">
+            A data de aquisição é calculada a partir da primeira transação de entrada do ativo.
+          </p>
         </CardContent>
       </Card>
 
       <TransactionsSection asset={asset} />
+
+      <RecurringSection asset={asset} />
 
       {profile.futureTransactionTypes && (
         <p className="text-xs text-muted-foreground">
