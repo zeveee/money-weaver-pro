@@ -491,4 +491,34 @@ export const VALUATION_SPECS: Record<AssetType, ValuationSpec> = {
   cash: { mode: "total_value", label: "Saldo", totalLabel: "Saldo" },
 };
 
-export const getValuationSpec = (type: AssetType): ValuationSpec => VALUATION_SPECS[type];
+/** Specs alternativas para produtos baseados em Unidades de Participação. */
+export const UNIT_BASED_VALUATION_SPECS: Partial<Record<AssetType, ValuationSpec>> = {
+  capitalization_insurance: {
+    mode: "unit_price",
+    label: "NAV por unidade de participação",
+    totalLabel: "Valor da apólice",
+    help: "Valor da apólice = unidades detidas à data × NAV.",
+  },
+  ppr: {
+    mode: "unit_price",
+    label: "NAV por unidade de participação",
+    totalLabel: "Valor do plano",
+    help: "Valor do plano = unidades detidas à data × NAV.",
+  },
+};
+
+export interface AssetCapabilities {
+  /** Produto baseado em Unidades de Participação (Unit Linked). */
+  unitBased?: boolean;
+}
+
+export const getValuationSpec = (
+  type: AssetType,
+  caps: AssetCapabilities = {},
+): ValuationSpec =>
+  (caps.unitBased ? UNIT_BASED_VALUATION_SPECS[type] : undefined) ?? VALUATION_SPECS[type];
+
+/** Lê a característica Unit Linked a partir da metadata do ativo. */
+export const isUnitBased = (type: AssetType, metadata?: Record<string, unknown> | null): boolean =>
+  UNIT_BASED_CAPABLE.includes(type) && metadata?.["unitBased"] === true;
+
