@@ -135,19 +135,27 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
       <CardContent className="space-y-4">
         <div className="grid gap-3 rounded-md border p-3 sm:grid-cols-3">
           <div>
-            <p className="text-xs text-muted-foreground">Valor atual</p>
+            <p className="text-xs text-muted-foreground">Valor de mercado</p>
             <p className="text-lg font-semibold">{money(current.value, current.currency)}</p>
             <p className="text-xs text-muted-foreground">
               {current.source === "valuation"
-                ? `Valorização de ${formatDateLabel(current.asOf!)}`
+                ? `Valorização de ${asOfLabel}${isFuture ? " (data futura)" : ""}`
                 : current.source === "cost"
                   ? "Custo da posição (sem valorização)"
                   : "Sem dados"}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Custo da posição</p>
-            <p className="text-lg font-semibold">{money(position.costBasis, asset.currency)}</p>
+            <p className="text-xs text-muted-foreground">
+              Custo da posição{asOfLabel ? ` a ${asOfLabel}` : ""}
+            </p>
+            <p className="text-lg font-semibold">{money(refPosition.costBasis, asset.currency)}</p>
+            {refPosition.tracksQuantity && (
+              <p className="text-xs text-muted-foreground">
+                {Number(refPosition.quantity.toFixed(8))} un. · custo médio{" "}
+                {money(refPosition.averageCost, asset.currency)}
+              </p>
+            )}
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Mais-valia não realizada</p>
@@ -161,6 +169,11 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             )}
           </div>
         </div>
+        {asOfLabel && (
+          <p className="text-xs text-muted-foreground">
+            Métricas calculadas com a posição reconstruída a {asOfLabel}, não com a posição atual.
+          </p>
+        )}
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">A carregar…</p>
