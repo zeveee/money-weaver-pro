@@ -45,6 +45,7 @@ export async function createValuation(
       total_value: input.totalValue,
       currency: input.currency,
       source: input.source ?? null,
+      is_manual: input.isManual,
     })
     .select("*")
     .single();
@@ -64,6 +65,7 @@ export async function updateValuation(
       total_value: input.totalValue,
       currency: input.currency,
       source: input.source ?? null,
+      is_manual: input.isManual,
     })
     .eq("id", id)
     .select("*")
