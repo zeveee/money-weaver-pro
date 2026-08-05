@@ -113,9 +113,12 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
             title="Nova transação"
             assetType={asset.type}
             currency={asset.currency}
+            transactions={transactions}
+            unitBased={unitBased}
             onSubmit={(input) => createM.mutate(input)}
             loading={createM.isPending}
           />
+
         </Dialog>
       </CardHeader>
 
