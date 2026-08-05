@@ -8,6 +8,7 @@ import {
   usesQuantity as usesQuantityFor,
 } from "@/domain/transaction-profiles";
 import { derivePosition, transactionTotals } from "@/services/transaction-metrics";
+import { isUnitBased } from "@/domain/asset-profiles";
 import {
   createTransaction,
   deleteTransaction,
@@ -93,9 +94,10 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const unitBased = isUnitBased(asset.type, asset.metadata);
   const totals = useMemo(() => transactionTotals(transactions), [transactions]);
   const position = useMemo(
-    () => derivePosition(asset.type, transactions),
+    () => derivePosition(asset.type, transactions, { unitBased }),
     [asset.type, transactions],
   );
 
@@ -168,13 +170,17 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
           <ul className="divide-y rounded-md border">
             {transactions.map((t) => {
               const profile = getTransactionProfile(t.type);
-              const withQty = usesQuantityFor(asset.type, t.type);
+              const withQty = usesQuantityFor(asset.type, t.type, { unitBased });
+              const inconsistent = position.inconsistentTransactionIds.includes(t.id);
               return (
                 <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">{getTransactionLabel(asset.type, t.type)}</Badge>
                       {t.recurringTransactionId && <Badge variant="outline">Recorrente</Badge>}
+                      {inconsistent && (
+                        <Badge variant="destructive">Quantidade em falta</Badge>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         {dateLabel(t.occurredAt)}
                       </span>
@@ -211,6 +217,8 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                         title="Editar transação"
                         assetType={asset.type}
                         currency={asset.currency}
+                        transactions={transactions}
+                        unitBased={unitBased}
                         transaction={t}
                         onSubmit={(input) => updateM.mutate({ id: t.id, input })}
                         loading={updateM.isPending}
