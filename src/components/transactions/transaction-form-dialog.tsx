@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { AssetType, Transaction, TransactionType } from "@/domain/types";
 import {
@@ -13,6 +13,7 @@ import {
   type TransactionFormValues,
 } from "@/domain/transaction-profiles";
 import type { TransactionWriteInput } from "@/repositories/transactions";
+import { availableQuantityAt } from "@/services/position-engine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,6 +74,8 @@ export function TransactionFormDialog({
   assetType,
   currency,
   transaction,
+  transactions = [],
+  unitBased = false,
   onSubmit,
   loading,
 }: {
@@ -80,6 +83,10 @@ export function TransactionFormDialog({
   assetType: AssetType;
   currency: string;
   transaction?: Transaction;
+  /** Histórico completo do ativo, para validar alienações à data. */
+  transactions?: Transaction[];
+  /** Produto baseado em Unidades de Participação (Unit Linked). */
+  unitBased?: boolean;
   onSubmit: (input: TransactionWriteInput) => void;
   loading: boolean;
 }) {
@@ -91,14 +98,15 @@ export function TransactionFormDialog({
 
   const profile = getTransactionProfile(values.type);
   const option = getTransactionOption(assetType, values.type);
-  const withQuantity = usesQuantityFor(assetType, values.type);
+  const ctx = useMemo(() => ({ unitBased }), [unitBased]);
+  const withQuantity = usesQuantityFor(assetType, values.type, ctx);
   const options = getTransactionTypeOptions(assetType);
 
   const changeType = (next: TransactionType) => {
     setValues((p) => ({
       ...p,
       type: next,
-      quantity: usesQuantityFor(assetType, next) ? p.quantity : "",
+      quantity: usesQuantityFor(assetType, next, ctx) ? p.quantity : "",
     }));
   };
 
@@ -106,11 +114,27 @@ export function TransactionFormDialog({
   const amount = Number(values.amount);
   const fees = values.fees === "" ? 0 : Number(values.fees);
   const taxes = values.taxes === "" ? 0 : Number(values.taxes);
+  /** Posição disponível à data escolhida, excluindo a transação em edição. */
+  const available = useMemo(() => {
+    if (!values.occurredAt) return null;
+    const history = transactions.filter((t) => t.id !== transaction?.id);
+    return availableQuantityAt(
+      assetType,
+      history,
+      new Date(values.occurredAt).toISOString(),
+      ctx,
+    );
+  }, [transactions, transaction?.id, assetType, values.occurredAt, ctx]);
+
+  const isDisposal = profile.direction === "out";
   const showUnitPrice = withQuantity && qty > 0 && Number.isFinite(amount) && amount > 0;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const result = validateTransactionForm(assetType, values);
+    const result = validateTransactionForm(assetType, values, {
+      ...ctx,
+      availableQuantity: available ?? undefined,
+    });
     if (!result.ok) return toast.error(result.message);
 
     const quantity = withQuantity ? qty : 0;
@@ -182,6 +206,11 @@ export function TransactionFormDialog({
                 value={values.quantity}
                 onChange={(e) => set("quantity", e.target.value)}
               />
+              {isDisposal && available != null && (
+                <p className="text-xs text-muted-foreground">
+                  Disponível nesta data: {Number(available.toFixed(8))}
+                </p>
+              )}
             </div>
           )}
           <div className="space-y-2">
