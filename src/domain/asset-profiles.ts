@@ -234,7 +234,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
     type: "capitalization_insurance",
     label: "Seguro de capitalização",
     purpose:
-      "Produto segurador com capital garantido/valorização periódica; valor atual vem da última valoração.",
+      "Produto segurador com capital garantido ou Unit Linked; o valor atual vem da última valoração (valor do contrato ou NAV × UPs).",
     fields: [
       { key: "insurer", label: "Seguradora", kind: "text", target: "metadata", maxLength: 80 },
       {
@@ -252,7 +252,9 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
         min: 0,
         step: 0.01,
       },
+      UNIT_BASED_FIELD,
     ],
+
     transactionTypes: txFor("capitalization_insurance"),
     supportsValuations: true,
     supportsRecurring: true,
