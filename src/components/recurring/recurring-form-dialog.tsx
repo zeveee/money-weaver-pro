@@ -22,6 +22,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { formatCurrency as money } from "@/lib/number-format";
 
 export const FREQUENCY_OPTIONS: { value: RecurrenceFrequency; label: string }[] = [
   { value: "weekly", label: "Semanal" },
@@ -38,13 +39,6 @@ export const MODE_OPTIONS: { value: RecurrenceExecutionMode; label: string }[] =
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-const money = (value: number, currency: string) => {
-  try {
-    return new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value);
-  } catch {
-    return `${value.toFixed(2)} ${currency}`;
-  }
-};
 
 export function RecurringFormDialog({
   title, assetType, currency, recurring, onSubmit, loading,

@@ -38,14 +38,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
 
-const money = (value: number, currency: string) => {
-  try {
-    return new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value);
-  } catch {
-    return `${value.toFixed(2)} ${currency}`;
-  }
-};
 
 export function ValuationsSection({ asset }: { asset: Asset }) {
   const qc = useQueryClient();
@@ -150,8 +144,8 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             </p>
             {current.mode === "derived" && latest?.unitPrice != null && (
               <p className="text-xs text-muted-foreground">
-                Derivada: {money(latest.unitPrice, current.currency)} ×{" "}
-                {Number(refPosition.quantity.toFixed(8))} un.
+                Derivada: {formatUnitPrice(latest.unitPrice, current.currency)} ×{" "}
+                {formatQuantity(refPosition.quantity)} un.
               </p>
             )}
             {current.mode === "manual" && (
@@ -165,8 +159,8 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             <p className="text-lg font-semibold">{money(refPosition.costBasis, asset.currency)}</p>
             {refPosition.tracksQuantity && (
               <p className="text-xs text-muted-foreground">
-                {Number(refPosition.quantity.toFixed(8))} un. · custo médio{" "}
-                {money(refPosition.averageCost, asset.currency)}
+                {formatQuantity(refPosition.quantity)} un. · custo médio{" "}
+                {formatUnitPrice(refPosition.averageCost, asset.currency)}
               </p>
             )}
           </div>
@@ -177,7 +171,7 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             </p>
             {latest?.unitPrice != null && (
               <p className="text-xs text-muted-foreground">
-                {spec.label}: {money(latest.unitPrice, latest.currency)}
+                {spec.label}: {formatUnitPrice(latest.unitPrice, latest.currency)}
               </p>
             )}
           </div>
@@ -216,7 +210,7 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
                       </span>
                     </td>
                     <td className="py-2 pr-3">
-                      {v.unitPrice == null ? "—" : money(v.unitPrice, v.currency)}
+                      {v.unitPrice == null ? "—" : formatUnitPrice(v.unitPrice, v.currency)}
                     </td>
                     <td className="py-2 pr-3">
                       <span className="flex items-center gap-2">

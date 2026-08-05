@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatQuantity, formatUnitPrice } from "@/lib/number-format";
 
 const toLocalInput = (iso: string) => {
   const d = new Date(iso);
@@ -208,7 +209,7 @@ export function TransactionFormDialog({
               />
               {isDisposal && available != null && (
                 <p className="text-xs text-muted-foreground">
-                  Disponível nesta data: {Number(available.toFixed(8))}
+                  Disponível nesta data: {formatQuantity(available)}
                 </p>
               )}
             </div>
@@ -264,14 +265,14 @@ export function TransactionFormDialog({
           <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
             Preço unitário derivado:{" "}
             <span className="font-medium text-foreground">
-              {derivedUnitPrice(amount, qty).toFixed(4)} {values.currency}
+              {formatUnitPrice(derivedUnitPrice(amount, qty), values.currency)}
             </span>
             {(fees > 0 || taxes > 0) && (
               <>
                 {" "}
                 · efetivo (com custos):{" "}
                 <span className="font-medium text-foreground">
-                  {effectiveUnitPrice(profile.direction, amount, qty, fees, taxes).toFixed(4)}{" "}
+                  {formatUnitPrice(effectiveUnitPrice(profile.direction, amount, qty, fees, taxes))}{" "}
                   {values.currency}
                 </span>
               </>

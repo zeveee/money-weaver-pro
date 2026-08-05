@@ -135,3 +135,37 @@ describe("Posição à data (coerência temporal das Valuations)", () => {
     expect(p.realizedGain).toBe(750);
   });
 });
+
+describe("Precisão total (sem arredondamento no motor)", () => {
+  it("quantidades fracionárias de cripto mantêm as casas decimais", () => {
+    const p = buildPosition("crypto", [
+      tx("1", "buy", "2025-01-01T12:00:00.000Z", 0.0000001234, 12.34),
+      tx("2", "buy", "2025-02-01T12:00:00.000Z", 0.0000002766, 30.66),
+    ]);
+    expect(p.quantity).toBeCloseTo(0.0000004, 12);
+    expect(p.costBasis).toBeCloseTo(43, 10);
+    expect(p.averageCost).toBeCloseTo(43 / 0.0000004, 4);
+  });
+
+  it("NAV com muitas casas não é truncado no custo médio nem na mais-valia", () => {
+    const p = buildPosition("fund", [
+      tx("1", "buy", "2025-01-01T12:00:00.000Z", 123.456789, 1234.56789012),
+      tx("2", "sell", "2025-06-01T12:00:00.000Z", 23.456789, 300.123456789),
+    ]);
+    const avg = 1234.56789012 / 123.456789;
+    expect(p.averageCost).toBeCloseTo(avg, 12);
+    expect(p.quantity).toBeCloseTo(100, 9);
+    expect(p.realizedGain).toBeCloseTo(300.123456789 - 23.456789 * avg, 10);
+    expect(p.costBasis).toBeCloseTo(1234.56789012 - 23.456789 * avg, 10);
+  });
+
+  it("terços indivisíveis não acumulam erro visível ao longo da sequência", () => {
+    const p = buildPosition("etf", [
+      tx("1", "buy", "2025-01-01T12:00:00.000Z", 1 / 3, 100),
+      tx("2", "buy", "2025-02-01T12:00:00.000Z", 1 / 3, 100),
+      tx("3", "buy", "2025-03-01T12:00:00.000Z", 1 / 3, 100),
+    ]);
+    expect(p.quantity).toBeCloseTo(1, 12);
+    expect(p.averageCost).toBeCloseTo(300, 9);
+  });
+});

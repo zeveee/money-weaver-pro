@@ -33,15 +33,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const money = (value: number, currency: string) => {
-  try {
-    return new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value);
-  } catch {
-    return `${value.toFixed(2)} ${currency}`;
-  }
-};
 
 import { formatDateLabel } from "@/lib/date-format";
+import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
 
 const dateLabel = (iso: string) => formatDateLabel(iso);
 
@@ -134,11 +128,11 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
             <>
               <SummaryTile
                 label="Quantidade (derivada)"
-                value={String(Number(position.quantity.toFixed(8)))}
+                value={formatQuantity(position.quantity)}
               />
               <SummaryTile
                 label="Custo médio (derivado)"
-                value={position.quantity > 0 ? money(position.averageCost, asset.currency) : "—"}
+                value={position.quantity > 0 ? formatUnitPrice(position.averageCost, asset.currency) : "—"}
               />
             </>
           )}
@@ -193,7 +187,7 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                       {withQty && t.quantity > 0 && (
                         <span className="text-muted-foreground">
                           {" "}
-                          · {t.quantity} × {money(t.unitPrice, t.currency)}
+                          · {formatQuantity(t.quantity)} × {formatUnitPrice(t.unitPrice, t.currency)}
                         </span>
                       )}
                       {(t.fees > 0 || t.taxes > 0) && (

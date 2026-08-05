@@ -32,15 +32,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const money = (value: number, currency: string) => {
-  try {
-    return new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value);
-  } catch {
-    return `${value.toFixed(2)} ${currency}`;
-  }
-};
 
 import { formatDateLabel } from "@/lib/date-format";
+import { formatCurrency as money } from "@/lib/number-format";
 
 const dateLabel = (iso: string) => formatDateLabel(iso);
 const freqLabel = (f: string) => FREQUENCY_OPTIONS.find((o) => o.value === f)?.label ?? f;

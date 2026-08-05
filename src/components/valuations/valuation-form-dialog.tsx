@@ -9,16 +9,10 @@ import { Label } from "@/components/ui/label";
 import {
   DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { formatCurrency as money, formatQuantity } from "@/lib/number-format";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-const money = (value: number, currency: string) => {
-  try {
-    return new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value);
-  } catch {
-    return `${value.toFixed(2)} ${currency}`;
-  }
-};
 
 export function ValuationFormDialog({
   title, assetType, currency, quantityAt, unitBased = false, valuation, onSubmit, loading,
@@ -114,7 +108,7 @@ export function ValuationFormDialog({
                 disabled={manual}
               />
               <p className="text-xs text-muted-foreground">
-                Quantidade detida a {valuationDate}: {Number(quantity.toFixed(8))}
+                Quantidade detida a {valuationDate}: {formatQuantity(quantity)}
                 {derivedTotal != null && (
                   <> → {spec.totalLabel}: {money(derivedTotal, currency)}</>
                 )}

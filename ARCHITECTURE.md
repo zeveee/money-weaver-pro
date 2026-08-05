@@ -124,3 +124,23 @@ Catálogos globais (leitura pública, escrita admin):
 - **Serviços avançados**: adicionar `services/performance.ts` (TWR/MWR),
   `services/risk.ts` (volatilidade, drawdown), `services/tax.ts` — todos
   puros, seguindo o padrão de `portfolio-metrics.ts`.
+
+## Precisão numérica
+
+Regra: **arredondar apenas na apresentação**.
+
+- **Armazenamento**: escalas explícitas em Postgres — quantidades
+  `numeric(28,10)`, preço unitário / NAV e custo médio `numeric(28,12)`,
+  montantes `numeric(20,4)`, câmbios `numeric(20,10)`, taxas e XIRR
+  `numeric(12,8)`.
+- **Cálculo**: repositórios (`mapping.ts`) convertem cada coluna com
+  `Number(...)` sem truncar, e os serviços puros — `position-engine.ts`,
+  `valuation-metrics.ts`, `transaction-metrics.ts` e, futuramente,
+  rentabilidade e XIRR — operam sempre com precisão total. `EPSILON = 1e-9`
+  serve só para comparações, nunca para arredondar.
+- **Apresentação**: exclusivamente através de `src/lib/number-format.ts`
+  (`formatCurrency`, `formatQuantity`, `formatUnitPrice`, `formatPercent`).
+  Nenhum componente deve usar `toFixed` nem `Intl.NumberFormat` diretamente.
+
+`assets.quantity`, `assets.average_cost` e `assets.current_value` continuam a
+ser apenas cache: o valor exibido vem sempre do Position Engine.
