@@ -8,12 +8,12 @@
  */
 
 import type { AssetType, Transaction } from "@/domain/types";
+import { buildPosition, type PositionOptions } from "@/services/position-engine";
 import {
   TRANSACTION_PROFILES,
-  getTransactionOption,
-  usesQuantity as usesQuantityFor,
   type IncomeKind,
 } from "@/domain/transaction-profiles";
+
 
 export interface TransactionTotals {
   /** Soma dos montantes de entrada (compras, depósitos, transferências de entrada). */
