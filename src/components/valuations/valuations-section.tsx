@@ -218,7 +218,14 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
                     <td className="py-2 pr-3">
                       {v.unitPrice == null ? "—" : money(v.unitPrice, v.currency)}
                     </td>
-                    <td className="py-2 pr-3">{money(v.totalValue, v.currency)}</td>
+                    <td className="py-2 pr-3">
+                      <span className="flex items-center gap-2">
+                        {money(resolveValuationValue(v, quantityAt), v.currency)}
+                        <Badge variant={valuationMode(v) === "derived" ? "outline" : "secondary"}>
+                          {valuationMode(v) === "derived" ? "Derivada" : "Manual"}
+                        </Badge>
+                      </span>
+                    </td>
                     <td className="py-2 pr-3 text-muted-foreground">{v.source ?? "—"}</td>
                     <td className="py-2">
                       <div className="flex justify-end gap-1">
