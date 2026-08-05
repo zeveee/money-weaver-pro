@@ -106,6 +106,18 @@ const marketIdentifiers: AssetFieldSpec[] = [
   { key: "broker", label: "Corretora / Custódia", kind: "text", target: "metadata", maxLength: 80 },
 ];
 
+/**
+ * Produtos seguradores/PPR podem funcionar por Unidades de Participação (Unit Linked).
+ * Quando ativo, reforços e resgates passam a usar unidades e a valorização passa a NAV.
+ */
+export const UNIT_BASED_FIELD: AssetFieldSpec = {
+  key: "unitBased",
+  label: "Baseado em unidades de participação (Unit Linked)",
+  kind: "checkbox",
+  target: "metadata",
+  help: "Ativa quantidade de UPs nos movimentos e valorização por NAV por UP.",
+};
+
 
 /**
  * Os tipos de transação por AssetType são definidos na matriz declarativa em
