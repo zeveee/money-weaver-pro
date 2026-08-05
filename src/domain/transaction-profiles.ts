@@ -287,10 +287,17 @@ export function effectiveUnitPrice(
   return total / quantity;
 }
 
+/** Contexto de validação: características do ativo + posição disponível à data. */
+export interface TransactionValidationContext extends QuantityContext {
+  /** Quantidade detida à data do movimento (para validar alienações). */
+  availableQuantity?: number;
+}
+
 /** Validação pura do formulário de transação. */
 export function validateTransactionForm(
   assetType: AssetType,
   v: TransactionFormValues,
+  ctx: TransactionValidationContext = {},
 ): { ok: true } | { ok: false; message: string } {
   if (!getTransactionTypes(assetType).includes(v.type)) {
     return { ok: false, message: "Tipo de transação não suportado por este ativo." };
@@ -301,11 +308,22 @@ export function validateTransactionForm(
 
   const num = (s: string) => (s === "" ? NaN : Number(s));
 
-  if (usesQuantity(assetType, v.type)) {
+  if (usesQuantity(assetType, v.type, ctx)) {
     const q = num(v.quantity);
     if (!Number.isFinite(q) || q <= 0)
       return { ok: false, message: "Quantidade deve ser maior que zero." };
+
+    const isDisposal = TRANSACTION_PROFILES[v.type].direction === "out";
+    if (isDisposal && ctx.availableQuantity != null && q > ctx.availableQuantity + 1e-9) {
+      return {
+        ok: false,
+        message: `Quantidade superior à posição disponível nesta data (${Number(
+          ctx.availableQuantity.toFixed(8),
+        )}).`,
+      };
+    }
   }
+
 
   const amount = num(v.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
