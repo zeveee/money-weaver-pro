@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import {
   DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
+import { formatCurrency as money, formatQuantity } from "@/lib/number-format";
 
 const today = () => new Date().toISOString().slice(0, 10);
 

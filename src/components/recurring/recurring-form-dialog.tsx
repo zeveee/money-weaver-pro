@@ -22,7 +22,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
+import { formatCurrency as money } from "@/lib/number-format";
 
 export const FREQUENCY_OPTIONS: { value: RecurrenceFrequency; label: string }[] = [
   { value: "weekly", label: "Semanal" },

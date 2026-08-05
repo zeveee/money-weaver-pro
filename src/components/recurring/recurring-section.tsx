@@ -34,7 +34,7 @@ import {
 
 
 import { formatDateLabel } from "@/lib/date-format";
-import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
+import { formatCurrency as money } from "@/lib/number-format";
 
 const dateLabel = (iso: string) => formatDateLabel(iso);
 const freqLabel = (f: string) => FREQUENCY_OPTIONS.find((o) => o.value === f)?.label ?? f;
