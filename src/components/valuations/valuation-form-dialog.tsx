@@ -100,7 +100,7 @@ export function ValuationFormDialog({
           />
         </div>
 
-        {spec.mode === "unit_price" ? (
+        {derivable ? (
           <>
             <div className="grid gap-2">
               <Label htmlFor="val-unit">{spec.label} ({currency})</Label>
@@ -111,6 +111,7 @@ export function ValuationFormDialog({
                 min={0}
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(e.target.value)}
+                disabled={manual}
               />
               <p className="text-xs text-muted-foreground">
                 Quantidade detida a {valuationDate}: {Number(quantity.toFixed(8))}
@@ -126,9 +127,9 @@ export function ValuationFormDialog({
                   id="val-override"
                   type="checkbox"
                   className="h-4 w-4"
-                  checked={totalOverridden}
+                  checked={manual}
                   onChange={(e) => {
-                    setTotalOverridden(e.target.checked);
+                    setManual(e.target.checked);
                     if (e.target.checked && totalValue === "" && derivedTotal != null) {
                       setTotalValue(String(derivedTotal));
                     }
@@ -138,7 +139,7 @@ export function ValuationFormDialog({
                   Definir {spec.totalLabel.toLowerCase()} manualmente
                 </Label>
               </div>
-              {totalOverridden && (
+              {manual ? (
                 <Input
                   type="number"
                   step="any"
@@ -147,6 +148,12 @@ export function ValuationFormDialog({
                   onChange={(e) => setTotalValue(e.target.value)}
                   placeholder={spec.totalLabel}
                 />
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Valorização <strong>derivada</strong>: o {spec.totalLabel.toLowerCase()} é sempre
+                  recalculado como {spec.label.toLowerCase()} × quantidade à data, acompanhando
+                  alterações às transações. Marque a opção acima para congelar um valor manual.
+                </p>
               )}
             </div>
           </>
