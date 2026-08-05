@@ -71,10 +71,41 @@ export function currentValue(
 }
 
 /**
- * Mais-valia não realizada preliminar (Valor Atual − custo da posição).
+ * Valor de referência do ativo: valorização mais recente registada (mesmo
+ * futura) ou, na ausência de valorizações, o custo da posição atual.
+ */
+export function referenceValue(
+  valuations: AssetValuation[],
+  costBasis: number,
+  assetCurrency: string,
+): CurrentValue {
+  const ref = referenceValuation(valuations);
+  if (ref) {
+    return {
+      value: ref.totalValue,
+      currency: ref.currency || assetCurrency,
+      source: "valuation",
+      asOf: ref.valuationDate,
+    };
+  }
+  return {
+    value: costBasis,
+    currency: assetCurrency,
+    source: costBasis > 0 ? "cost" : "none",
+    asOf: null,
+  };
+}
+
+/**
+ * Mais-valia não realizada preliminar (valor de mercado − custo da posição).
+ * `costBasisAtValuationDate` TEM de ser o custo da posição reconstruída à data
+ * da valorização usada, nunca o custo atual.
  * O cálculo definitivo pertence ao futuro Financial Engine.
  */
-export function unrealizedGain(current: CurrentValue, costBasis: number): number | null {
+export function unrealizedGain(
+  current: CurrentValue,
+  costBasisAtValuationDate: number,
+): number | null {
   if (current.source !== "valuation") return null;
-  return current.value - costBasis;
+  return current.value - costBasisAtValuationDate;
 }
