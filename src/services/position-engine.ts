@@ -74,10 +74,11 @@ export function buildPosition(
   );
 
   const ctx: QuantityContext = { unitBased };
-  const modelUsesUnits =
-    usesQuantityFor(assetType, "buy", ctx) ||
-    usesQuantityFor(assetType, "deposit", ctx) ||
-    usesQuantityFor(assetType, "transfer_in", ctx);
+  // Apenas os movimentos declarados para este AssetType definem o modelo.
+  const modelUsesUnits = getTransactionOptions(assetType).some(
+    (o) => TRANSACTION_PROFILES[o.type]?.direction === "in" && usesQuantityFor(assetType, o.type, ctx),
+  );
+
 
   let quantity = 0;
   let costBasis = 0;
