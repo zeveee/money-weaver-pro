@@ -59,9 +59,16 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
   const position = derivePosition(asset.type, transactions, { unitBased });
   const quantityAt = (date: string) =>
     availableQuantityAt(asset.type, transactions, date, { unitBased });
-  const current = currentValue(valuations, position.costBasis, asset.currency);
-  const gain = unrealizedGain(current, position.costBasis);
-  const latest = latestValuation(valuations);
+  const latest = referenceValuation(valuations);
+  const current = referenceValue(valuations, position.costBasis, asset.currency);
+  // Todas as métricas derivadas usam a POSIÇÃO À DATA da valorização de
+  // referência — nunca a posição atual.
+  const refPosition = latest
+    ? positionAt(asset.type, transactions, latest.valuationDate, { unitBased })
+    : position;
+  const gain = unrealizedGain(current, refPosition.costBasis);
+  const isFuture = !!latest && latest.valuationDate > todayISODate();
+  const asOfLabel = latest ? formatDateLabel(latest.valuationDate) : null;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["valuations", asset.id] });
