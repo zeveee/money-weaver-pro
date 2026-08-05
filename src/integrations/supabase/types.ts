@@ -236,6 +236,7 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          is_manual: boolean
           source: string | null
           total_value: number
           unit_price: number | null
@@ -246,6 +247,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          is_manual?: boolean
           source?: string | null
           total_value: number
           unit_price?: number | null
@@ -256,6 +258,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          is_manual?: boolean
           source?: string | null
           total_value?: number
           unit_price?: number | null
