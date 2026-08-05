@@ -108,7 +108,7 @@ export function ValuationFormDialog({
                 disabled={manual}
               />
               <p className="text-xs text-muted-foreground">
-                Quantidade detida a {valuationDate}: {Number(quantity.toFixed(8))}
+                Quantidade detida a {valuationDate}: {formatQuantity(quantity)}
                 {derivedTotal != null && (
                   <> → {spec.totalLabel}: {money(derivedTotal, currency)}</>
                 )}

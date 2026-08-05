@@ -144,8 +144,8 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             </p>
             {current.mode === "derived" && latest?.unitPrice != null && (
               <p className="text-xs text-muted-foreground">
-                Derivada: {money(latest.unitPrice, current.currency)} ×{" "}
-                {Number(refPosition.quantity.toFixed(8))} un.
+                Derivada: {formatUnitPrice(latest.unitPrice, current.currency)} ×{" "}
+                {formatQuantity(refPosition.quantity)} un.
               </p>
             )}
             {current.mode === "manual" && (
@@ -159,7 +159,7 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             <p className="text-lg font-semibold">{money(refPosition.costBasis, asset.currency)}</p>
             {refPosition.tracksQuantity && (
               <p className="text-xs text-muted-foreground">
-                {Number(refPosition.quantity.toFixed(8))} un. · custo médio{" "}
+                {formatQuantity(refPosition.quantity)} un. · custo médio{" "}
                 {money(refPosition.averageCost, asset.currency)}
               </p>
             )}
@@ -171,7 +171,7 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             </p>
             {latest?.unitPrice != null && (
               <p className="text-xs text-muted-foreground">
-                {spec.label}: {money(latest.unitPrice, latest.currency)}
+                {spec.label}: {formatUnitPrice(latest.unitPrice, latest.currency)}
               </p>
             )}
           </div>
