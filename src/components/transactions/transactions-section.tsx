@@ -182,7 +182,7 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                       <Badge variant="secondary">{getTransactionLabel(asset.type, t.type)}</Badge>
                       {t.recurringTransactionId && <Badge variant="outline">Recorrente</Badge>}
                       {inconsistent && (
-                        <Badge variant="destructive">Quantidade em falta</Badge>
+                        <Badge variant="destructive">Quantidade incoerente</Badge>
                       )}
                       <span className="text-xs text-muted-foreground">
                         {dateLabel(t.occurredAt)}

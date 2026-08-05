@@ -121,6 +121,11 @@ export function buildPosition(
     // direction === "out"
     const proceeds = amount - costs;
     if (withUnits) {
+      if (declaredQty > quantity + EPSILON) {
+        // Alienação superior à posição disponível nesta data (ordem cronológica
+        // incoerente ou histórico incompleto): sinaliza e consome só o disponível.
+        inconsistentTransactionIds.push(t.id);
+      }
       const qtyOut = Math.min(declaredQty, quantity);
       const costOut = qtyOut * averageCost;
       realizedGain += proceeds - costOut;
