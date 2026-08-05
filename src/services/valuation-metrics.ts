@@ -11,6 +11,30 @@ import type { AssetValuation, ISODate } from "@/domain/types";
 
 export const todayISODate = (): ISODate => new Date().toISOString().slice(0, 10);
 
+/** Resolvedor da quantidade detida a uma data (Position Engine). */
+export type QuantityAt = (date: ISODate) => number;
+
+export type ValuationMode = "derived" | "manual";
+
+export const valuationMode = (v: AssetValuation): ValuationMode =>
+  v.isManual || v.unitPrice == null ? "manual" : "derived";
+
+/**
+ * Valor de mercado efetivo de uma valorização.
+ * - Derivada: `unitPrice × quantidade à data`, recalculado a cada leitura, pelo
+ *   que reflete de imediato qualquer alteração ao histórico de transações.
+ * - Manual: valor total congelado, tal como introduzido.
+ */
+export function resolveValuationValue(
+  v: AssetValuation,
+  quantityAt?: QuantityAt,
+): number {
+  if (valuationMode(v) === "derived" && quantityAt) {
+    return (v.unitPrice as number) * quantityAt(v.valuationDate);
+  }
+  return v.totalValue;
+}
+
 /** Valorização mais recente com data <= `asOf`. */
 export function latestValuation(
   valuations: AssetValuation[],
@@ -41,7 +65,29 @@ export interface CurrentValue {
   source: CurrentValueSource;
   /** Data da valorização usada, quando `source === "valuation"`. */
   asOf: ISODate | null;
+  /** Modo da valorização usada, quando `source === "valuation"`. */
+  mode: ValuationMode | null;
 }
+
+const fromValuation = (
+  v: AssetValuation,
+  assetCurrency: string,
+  quantityAt?: QuantityAt,
+): CurrentValue => ({
+  value: resolveValuationValue(v, quantityAt),
+  currency: v.currency || assetCurrency,
+  source: "valuation",
+  asOf: v.valuationDate,
+  mode: valuationMode(v),
+});
+
+const fromCost = (costBasis: number, assetCurrency: string): CurrentValue => ({
+  value: costBasis,
+  currency: assetCurrency,
+  source: costBasis > 0 ? "cost" : "none",
+  asOf: null,
+  mode: null,
+});
 
 /**
  * Valor Atual do ativo.
@@ -52,22 +98,10 @@ export function currentValue(
   costBasis: number,
   assetCurrency: string,
   asOf: ISODate = todayISODate(),
+  quantityAt?: QuantityAt,
 ): CurrentValue {
   const latest = latestValuation(valuations, asOf);
-  if (latest) {
-    return {
-      value: latest.totalValue,
-      currency: latest.currency || assetCurrency,
-      source: "valuation",
-      asOf: latest.valuationDate,
-    };
-  }
-  return {
-    value: costBasis,
-    currency: assetCurrency,
-    source: costBasis > 0 ? "cost" : "none",
-    asOf: null,
-  };
+  return latest ? fromValuation(latest, assetCurrency, quantityAt) : fromCost(costBasis, assetCurrency);
 }
 
 /**
@@ -78,22 +112,10 @@ export function referenceValue(
   valuations: AssetValuation[],
   costBasis: number,
   assetCurrency: string,
+  quantityAt?: QuantityAt,
 ): CurrentValue {
   const ref = referenceValuation(valuations);
-  if (ref) {
-    return {
-      value: ref.totalValue,
-      currency: ref.currency || assetCurrency,
-      source: "valuation",
-      asOf: ref.valuationDate,
-    };
-  }
-  return {
-    value: costBasis,
-    currency: assetCurrency,
-    source: costBasis > 0 ? "cost" : "none",
-    asOf: null,
-  };
+  return ref ? fromValuation(ref, assetCurrency, quantityAt) : fromCost(costBasis, assetCurrency);
 }
 
 /**

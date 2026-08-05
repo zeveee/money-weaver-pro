@@ -35,6 +35,7 @@ export function ValuationFormDialog({
   loading: boolean;
 }) {
   const spec = getValuationSpec(assetType, { unitBased });
+  const derivable = spec.mode === "unit_price";
   const [valuationDate, setValuationDate] = useState(valuation?.valuationDate ?? today());
   const [unitPrice, setUnitPrice] = useState(
     valuation?.unitPrice != null ? String(valuation.unitPrice) : "",
@@ -42,8 +43,10 @@ export function ValuationFormDialog({
   const [totalValue, setTotalValue] = useState(
     valuation ? String(valuation.totalValue) : "",
   );
-  const [totalOverridden, setTotalOverridden] = useState(
-    Boolean(valuation && valuation.unitPrice != null),
+  // O modo manual NUNCA é inferido da presença de NAV: só o estado persistido
+  // `isManual` (ou a inexistência de modo derivado) o pode ativar.
+  const [manual, setManual] = useState(
+    derivable ? Boolean(valuation?.isManual) : true,
   );
   const [source, setSource] = useState(valuation?.source ?? "");
 
@@ -59,26 +62,21 @@ export function ValuationFormDialog({
     return p * quantity;
   }, [unitPrice, quantity]);
 
-  const effectiveTotal =
-    spec.mode === "unit_price"
-      ? totalOverridden && totalValue !== ""
-        ? Number(totalValue)
-        : (derivedTotal ?? 0)
-      : Number(totalValue);
+  const effectiveTotal = manual ? Number(totalValue) : (derivedTotal ?? 0);
 
   const submit = () => {
     if (!valuationDate) return toast.error("Data é obrigatória");
-    if (spec.mode === "unit_price" && unitPrice === "" && !totalOverridden)
-      return toast.error(`${spec.label} é obrigatório`);
+    if (!manual && unitPrice === "") return toast.error(`${spec.label} é obrigatório`);
     if (!Number.isFinite(effectiveTotal) || effectiveTotal < 0)
       return toast.error("Valor total inválido");
 
     onSubmit({
       valuationDate,
-      unitPrice: spec.mode === "unit_price" && unitPrice !== "" ? Number(unitPrice) : null,
+      unitPrice: derivable && unitPrice !== "" ? Number(unitPrice) : null,
       totalValue: effectiveTotal,
       currency,
       source: source.trim() || null,
+      isManual: manual,
     });
   };
 
@@ -102,7 +100,7 @@ export function ValuationFormDialog({
           />
         </div>
 
-        {spec.mode === "unit_price" ? (
+        {derivable ? (
           <>
             <div className="grid gap-2">
               <Label htmlFor="val-unit">{spec.label} ({currency})</Label>
@@ -113,6 +111,7 @@ export function ValuationFormDialog({
                 min={0}
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(e.target.value)}
+                disabled={manual}
               />
               <p className="text-xs text-muted-foreground">
                 Quantidade detida a {valuationDate}: {Number(quantity.toFixed(8))}
@@ -128,9 +127,9 @@ export function ValuationFormDialog({
                   id="val-override"
                   type="checkbox"
                   className="h-4 w-4"
-                  checked={totalOverridden}
+                  checked={manual}
                   onChange={(e) => {
-                    setTotalOverridden(e.target.checked);
+                    setManual(e.target.checked);
                     if (e.target.checked && totalValue === "" && derivedTotal != null) {
                       setTotalValue(String(derivedTotal));
                     }
@@ -140,7 +139,7 @@ export function ValuationFormDialog({
                   Definir {spec.totalLabel.toLowerCase()} manualmente
                 </Label>
               </div>
-              {totalOverridden && (
+              {manual ? (
                 <Input
                   type="number"
                   step="any"
@@ -149,6 +148,12 @@ export function ValuationFormDialog({
                   onChange={(e) => setTotalValue(e.target.value)}
                   placeholder={spec.totalLabel}
                 />
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Valorização <strong>derivada</strong>: o {spec.totalLabel.toLowerCase()} é sempre
+                  recalculado como {spec.label.toLowerCase()} × quantidade à data, acompanhando
+                  alterações às transações. Marque a opção acima para congelar um valor manual.
+                </p>
               )}
             </div>
           </>

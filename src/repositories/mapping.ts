@@ -119,6 +119,7 @@ export const toValuation = (r: Row): AssetValuation => ({
   totalValue: Number(r.total_value ?? 0),
   currency: r.currency as string,
   source: (r.source as string) ?? null,
+  isManual: Boolean(r.is_manual ?? r.unit_price == null),
 });
 
 export const toLiability = (r: Row): Liability => ({

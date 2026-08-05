@@ -146,9 +146,15 @@ export interface AssetValuation {
   assetId: UUID;
   valuationDate: ISODate;
   unitPrice: number | null;
+  /**
+   * Valor total. Fonte de verdade quando `isManual`; caso contrário é apenas
+   * cache do último cálculo `unitPrice × quantidade à data`.
+   */
   totalValue: number;
   currency: CurrencyCode;
   source: string | null;
+  /** `false` = valorização derivada (NAV × posição à data), recalculada na leitura. */
+  isManual: boolean;
 }
 
 export interface Liability {

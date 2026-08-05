@@ -10,8 +10,10 @@ import { availableQuantityAt, positionAt } from "@/services/position-engine";
 import {
   referenceValuation,
   referenceValue,
+  resolveValuationValue,
   todayISODate,
   unrealizedGain,
+  valuationMode,
 } from "@/services/valuation-metrics";
 import {
   createValuation,
@@ -65,7 +67,9 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
   const quantityAt = (date: string) =>
     availableQuantityAt(asset.type, transactions, date, { unitBased });
   const latest = referenceValuation(valuations);
-  const current = referenceValue(valuations, position.costBasis, asset.currency);
+  // Valorizações derivadas são recalculadas aqui (NAV × quantidade à data),
+  // pelo que refletem de imediato alterações ao histórico de transações.
+  const current = referenceValue(valuations, position.costBasis, asset.currency, quantityAt);
   // Todas as métricas derivadas usam a POSIÇÃO À DATA da valorização de
   // referência — nunca a posição atual.
   const refPosition = latest
@@ -144,6 +148,15 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
                   ? "Custo da posição (sem valorização)"
                   : "Sem dados"}
             </p>
+            {current.mode === "derived" && latest?.unitPrice != null && (
+              <p className="text-xs text-muted-foreground">
+                Derivada: {money(latest.unitPrice, current.currency)} ×{" "}
+                {Number(refPosition.quantity.toFixed(8))} un.
+              </p>
+            )}
+            {current.mode === "manual" && (
+              <p className="text-xs text-muted-foreground">Valor manual (congelado)</p>
+            )}
           </div>
           <div>
             <p className="text-xs text-muted-foreground">
@@ -205,7 +218,14 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
                     <td className="py-2 pr-3">
                       {v.unitPrice == null ? "—" : money(v.unitPrice, v.currency)}
                     </td>
-                    <td className="py-2 pr-3">{money(v.totalValue, v.currency)}</td>
+                    <td className="py-2 pr-3">
+                      <span className="flex items-center gap-2">
+                        {money(resolveValuationValue(v, quantityAt), v.currency)}
+                        <Badge variant={valuationMode(v) === "derived" ? "outline" : "secondary"}>
+                          {valuationMode(v) === "derived" ? "Derivada" : "Manual"}
+                        </Badge>
+                      </span>
+                    </td>
                     <td className="py-2 pr-3 text-muted-foreground">{v.source ?? "—"}</td>
                     <td className="py-2">
                       <div className="flex justify-end gap-1">
