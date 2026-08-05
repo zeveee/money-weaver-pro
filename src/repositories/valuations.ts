@@ -5,9 +5,12 @@ import { toValuation } from "./mapping";
 export interface ValuationWriteInput {
   valuationDate: string; // YYYY-MM-DD
   unitPrice?: number | null;
+  /** Cache do cálculo (derivada) ou valor introduzido (manual). */
   totalValue: number;
   currency: string;
   source?: string | null;
+  /** `true` congela o valor total; `false` deriva de NAV × posição à data. */
+  isManual: boolean;
 }
 
 export async function listValuations(assetId: string): Promise<AssetValuation[]> {
