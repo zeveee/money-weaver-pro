@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
 
 const toLocalInput = (iso: string) => {
   const d = new Date(iso);

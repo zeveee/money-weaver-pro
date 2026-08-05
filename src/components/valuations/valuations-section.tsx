@@ -38,14 +38,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
 
-const money = (value: number, currency: string) => {
-  try {
-    return new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(value);
-  } catch {
-    return `${value.toFixed(2)} ${currency}`;
-  }
-};
 
 export function ValuationsSection({ asset }: { asset: Asset }) {
   const qc = useQueryClient();
