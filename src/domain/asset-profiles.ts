@@ -11,7 +11,7 @@
  */
 
 import type { AssetType, TransactionType } from "./types";
-import { getTransactionTypes } from "./transaction-profiles";
+import { UNIT_BASED_CAPABLE, getTransactionTypes } from "./transaction-profiles";
 
 export type FieldKind = "text" | "number" | "date" | "select" | "checkbox" | "textarea";
 
