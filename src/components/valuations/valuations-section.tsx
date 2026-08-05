@@ -10,8 +10,10 @@ import { availableQuantityAt, positionAt } from "@/services/position-engine";
 import {
   referenceValuation,
   referenceValue,
+  resolveValuationValue,
   todayISODate,
   unrealizedGain,
+  valuationMode,
 } from "@/services/valuation-metrics";
 import {
   createValuation,
