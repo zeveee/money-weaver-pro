@@ -128,11 +128,11 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
             <>
               <SummaryTile
                 label="Quantidade (derivada)"
-                value={String(Number(position.quantity.toFixed(8)))}
+                value={formatQuantity(position.quantity)}
               />
               <SummaryTile
                 label="Custo médio (derivado)"
-                value={position.quantity > 0 ? money(position.averageCost, asset.currency) : "—"}
+                value={position.quantity > 0 ? formatUnitPrice(position.averageCost, asset.currency) : "—"}
               />
             </>
           )}
@@ -187,7 +187,7 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                       {withQty && t.quantity > 0 && (
                         <span className="text-muted-foreground">
                           {" "}
-                          · {t.quantity} × {money(t.unitPrice, t.currency)}
+                          · {formatQuantity(t.quantity)} × {formatUnitPrice(t.unitPrice, t.currency)}
                         </span>
                       )}
                       {(t.fees > 0 || t.taxes > 0) && (

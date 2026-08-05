@@ -160,7 +160,7 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             {refPosition.tracksQuantity && (
               <p className="text-xs text-muted-foreground">
                 {formatQuantity(refPosition.quantity)} un. · custo médio{" "}
-                {money(refPosition.averageCost, asset.currency)}
+                {formatUnitPrice(refPosition.averageCost, asset.currency)}
               </p>
             )}
           </div>
@@ -210,7 +210,7 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
                       </span>
                     </td>
                     <td className="py-2 pr-3">
-                      {v.unitPrice == null ? "—" : money(v.unitPrice, v.currency)}
+                      {v.unitPrice == null ? "—" : formatUnitPrice(v.unitPrice, v.currency)}
                     </td>
                     <td className="py-2 pr-3">
                       <span className="flex items-center gap-2">
