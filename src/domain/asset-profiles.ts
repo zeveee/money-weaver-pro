@@ -206,7 +206,9 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
         target: "metadata",
         maxLength: 60,
       },
+      UNIT_BASED_FIELD,
     ],
+
     // Modelo simplificado: entradas e saídas de capital.
     transactionTypes: txFor("ppr"),
     futureTransactionTypes: [
