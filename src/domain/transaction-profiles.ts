@@ -223,8 +223,37 @@ export const getTransactionTypeOptions = (assetType: AssetType) =>
   getTransactionOptions(assetType).map((o) => ({ value: o.type, label: o.label }));
 
 /** Usa quantidade neste contexto (AssetType + tipo). */
-export const usesQuantity = (assetType: AssetType, type: TransactionType): boolean =>
-  getTransactionOption(assetType, type)?.usesQuantity ?? TRANSACTION_PROFILES[type].usesQuantity;
+/**
+ * Contexto do ativo que altera a semântica de unidades.
+ * `unitBased`: produto segurador/PPR baseado em Unidades de Participação (Unit Linked),
+ * onde reforços e resgates são expressos em UPs.
+ */
+export interface QuantityContext {
+  unitBased?: boolean;
+}
+
+/** Tipos com unidades quando o produto é baseado em UPs. */
+const UNIT_LINKED_MOVEMENTS: TransactionType[] = ["deposit", "withdrawal", "buy", "sell"];
+
+/** Tipos de ativo que podem ser baseados em Unidades de Participação. */
+export const UNIT_BASED_CAPABLE: AssetType[] = ["capitalization_insurance", "ppr"];
+
+/** Usa quantidade neste contexto (AssetType + tipo + características do ativo). */
+export const usesQuantity = (
+  assetType: AssetType,
+  type: TransactionType,
+  ctx: QuantityContext = {},
+): boolean => {
+  if (
+    ctx.unitBased &&
+    UNIT_BASED_CAPABLE.includes(assetType) &&
+    UNIT_LINKED_MOVEMENTS.includes(type)
+  ) {
+    return true;
+  }
+  return getTransactionOption(assetType, type)?.usesQuantity ?? TRANSACTION_PROFILES[type].usesQuantity;
+};
+
 
 export interface TransactionFormValues {
   type: TransactionType;
