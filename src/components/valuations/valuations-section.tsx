@@ -67,7 +67,9 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
   const quantityAt = (date: string) =>
     availableQuantityAt(asset.type, transactions, date, { unitBased });
   const latest = referenceValuation(valuations);
-  const current = referenceValue(valuations, position.costBasis, asset.currency);
+  // Valorizações derivadas são recalculadas aqui (NAV × quantidade à data),
+  // pelo que refletem de imediato alterações ao histórico de transações.
+  const current = referenceValue(valuations, position.costBasis, asset.currency, quantityAt);
   // Todas as métricas derivadas usam a POSIÇÃO À DATA da valorização de
   // referência — nunca a posição atual.
   const refPosition = latest
