@@ -6,8 +6,13 @@ import { getValuationSpec, isUnitBased } from "@/domain/asset-profiles";
 import { formatDateLabel } from "@/lib/date-format";
 import { listTransactions } from "@/repositories/transactions";
 import { derivePosition } from "@/services/transaction-metrics";
-import { availableQuantityAt } from "@/services/position-engine";
-import { currentValue, latestValuation, unrealizedGain } from "@/services/valuation-metrics";
+import { availableQuantityAt, positionAt } from "@/services/position-engine";
+import {
+  referenceValuation,
+  referenceValue,
+  todayISODate,
+  unrealizedGain,
+} from "@/services/valuation-metrics";
 import {
   createValuation,
   deleteValuation,
