@@ -222,7 +222,7 @@ export const getTransactionLabel = (assetType: AssetType, type: TransactionType)
 export const getTransactionTypeOptions = (assetType: AssetType) =>
   getTransactionOptions(assetType).map((o) => ({ value: o.type, label: o.label }));
 
-/** Usa quantidade neste contexto (AssetType + tipo). */
+
 /**
  * Contexto do ativo que altera a semântica de unidades.
  * `unitBased`: produto segurador/PPR baseado em Unidades de Participação (Unit Linked),
