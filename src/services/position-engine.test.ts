@@ -105,3 +105,33 @@ describe("Position Engine", () => {
     expect(p.quantity).toBe(100);
   });
 });
+
+describe("Posição à data (coerência temporal das Valuations)", () => {
+  const history = [
+    tx("1", "buy", "2025-01-01T12:00:00.000Z", 100, 1000),
+    tx("2", "buy", "2025-03-01T12:00:00.000Z", 100, 2000),
+    tx("3", "sell", "2025-06-01T12:00:00.000Z", 50, 1500),
+  ];
+
+  it("custo e custo médio a 01/02/2025 (só a primeira compra)", () => {
+    const p = positionAt("fund", history, "2025-02-01");
+    expect(p.quantity).toBe(100);
+    expect(p.costBasis).toBe(1000);
+    expect(p.averageCost).toBe(10);
+  });
+
+  it("custo e custo médio a 01/03/2025 (inclui a compra do próprio dia)", () => {
+    const p = positionAt("fund", history, "2025-03-01");
+    expect(p.quantity).toBe(200);
+    expect(p.costBasis).toBe(3000);
+    expect(p.averageCost).toBe(15);
+  });
+
+  it("custo e custo médio a 30/06/2025 (após a venda parcial)", () => {
+    const p = positionAt("fund", history, "2025-06-30");
+    expect(p.quantity).toBe(150);
+    expect(p.costBasis).toBe(2250);
+    expect(p.averageCost).toBe(15);
+    expect(p.realizedGain).toBe(750);
+  });
+});
