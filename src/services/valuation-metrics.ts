@@ -22,6 +22,16 @@ export function latestValuation(
   return eligible[0] ?? null;
 }
 
+/**
+ * Valorização mais recente REGISTADA, mesmo com data futura.
+ * É a referência apresentada na UI (badge "Atual" e resumo), para que a
+ * tabela e os cartões nunca divirjam.
+ */
+export function referenceValuation(valuations: AssetValuation[]): AssetValuation | null {
+  const sorted = [...valuations].sort((a, b) => (a.valuationDate < b.valuationDate ? 1 : -1));
+  return sorted[0] ?? null;
+}
+
 export type CurrentValueSource = "valuation" | "cost" | "none";
 
 export interface CurrentValue {
