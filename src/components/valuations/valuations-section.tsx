@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Asset, AssetValuation } from "@/domain/types";
-import { getValuationSpec } from "@/domain/asset-profiles";
+import { getValuationSpec, isUnitBased } from "@/domain/asset-profiles";
 import { formatDateLabel } from "@/lib/date-format";
 import { listTransactions } from "@/repositories/transactions";
 import { derivePosition } from "@/services/transaction-metrics";
+import { availableQuantityAt } from "@/services/position-engine";
 import { currentValue, latestValuation, unrealizedGain } from "@/services/valuation-metrics";
 import {
   createValuation,
@@ -43,7 +44,8 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<AssetValuation | null>(null);
-  const spec = getValuationSpec(asset.type);
+  const unitBased = isUnitBased(asset.type, asset.metadata);
+  const spec = getValuationSpec(asset.type, { unitBased });
 
   const { data: valuations = [], isLoading } = useQuery({
     queryKey: ["valuations", asset.id],
@@ -54,7 +56,9 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
     queryFn: () => listTransactions(asset.id),
   });
 
-  const position = derivePosition(asset.type, transactions);
+  const position = derivePosition(asset.type, transactions, { unitBased });
+  const quantityAt = (date: string) =>
+    availableQuantityAt(asset.type, transactions, date, { unitBased });
   const current = currentValue(valuations, position.costBasis, asset.currency);
   const gain = unrealizedGain(current, position.costBasis);
   const latest = latestValuation(valuations);
@@ -107,7 +111,8 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
               title="Nova valorização"
               assetType={asset.type}
               currency={asset.currency}
-              quantity={position.quantity}
+              quantityAt={quantityAt}
+              unitBased={unitBased}
               onSubmit={(input) => createMut.mutate(input)}
               loading={createMut.isPending}
             />
@@ -191,7 +196,8 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
                               title="Editar valorização"
                               assetType={asset.type}
                               currency={asset.currency}
-                              quantity={position.quantity}
+                              quantityAt={quantityAt}
+                              unitBased={unitBased}
                               valuation={v}
                               onSubmit={(input) => updateMut.mutate({ id: v.id, input })}
                               loading={updateMut.isPending}

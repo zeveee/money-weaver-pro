@@ -11,7 +11,7 @@
  */
 
 import type { AssetType, TransactionType } from "./types";
-import { getTransactionTypes } from "./transaction-profiles";
+import { UNIT_BASED_CAPABLE, getTransactionTypes } from "./transaction-profiles";
 
 export type FieldKind = "text" | "number" | "date" | "select" | "checkbox" | "textarea";
 
@@ -105,6 +105,18 @@ const marketIdentifiers: AssetFieldSpec[] = [
   },
   { key: "broker", label: "Corretora / Custódia", kind: "text", target: "metadata", maxLength: 80 },
 ];
+
+/**
+ * Produtos seguradores/PPR podem funcionar por Unidades de Participação (Unit Linked).
+ * Quando ativo, reforços e resgates passam a usar unidades e a valorização passa a NAV.
+ */
+export const UNIT_BASED_FIELD: AssetFieldSpec = {
+  key: "unitBased",
+  label: "Baseado em unidades de participação (Unit Linked)",
+  kind: "checkbox",
+  target: "metadata",
+  help: "Ativa quantidade de UPs nos movimentos e valorização por NAV por UP.",
+};
 
 
 /**
@@ -206,7 +218,9 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
         target: "metadata",
         maxLength: 60,
       },
+      UNIT_BASED_FIELD,
     ],
+
     // Modelo simplificado: entradas e saídas de capital.
     transactionTypes: txFor("ppr"),
     futureTransactionTypes: [
@@ -220,7 +234,7 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
     type: "capitalization_insurance",
     label: "Seguro de capitalização",
     purpose:
-      "Produto segurador com capital garantido/valorização periódica; valor atual vem da última valoração.",
+      "Produto segurador com capital garantido ou Unit Linked; o valor atual vem da última valoração (valor do contrato ou NAV × UPs).",
     fields: [
       { key: "insurer", label: "Seguradora", kind: "text", target: "metadata", maxLength: 80 },
       {
@@ -238,7 +252,9 @@ export const ASSET_PROFILES: Record<AssetType, AssetProfile> = {
         min: 0,
         step: 0.01,
       },
+      UNIT_BASED_FIELD,
     ],
+
     transactionTypes: txFor("capitalization_insurance"),
     supportsValuations: true,
     supportsRecurring: true,
@@ -475,4 +491,34 @@ export const VALUATION_SPECS: Record<AssetType, ValuationSpec> = {
   cash: { mode: "total_value", label: "Saldo", totalLabel: "Saldo" },
 };
 
-export const getValuationSpec = (type: AssetType): ValuationSpec => VALUATION_SPECS[type];
+/** Specs alternativas para produtos baseados em Unidades de Participação. */
+export const UNIT_BASED_VALUATION_SPECS: Partial<Record<AssetType, ValuationSpec>> = {
+  capitalization_insurance: {
+    mode: "unit_price",
+    label: "NAV por unidade de participação",
+    totalLabel: "Valor da apólice",
+    help: "Valor da apólice = unidades detidas à data × NAV.",
+  },
+  ppr: {
+    mode: "unit_price",
+    label: "NAV por unidade de participação",
+    totalLabel: "Valor do plano",
+    help: "Valor do plano = unidades detidas à data × NAV.",
+  },
+};
+
+export interface AssetCapabilities {
+  /** Produto baseado em Unidades de Participação (Unit Linked). */
+  unitBased?: boolean;
+}
+
+export const getValuationSpec = (
+  type: AssetType,
+  caps: AssetCapabilities = {},
+): ValuationSpec =>
+  (caps.unitBased ? UNIT_BASED_VALUATION_SPECS[type] : undefined) ?? VALUATION_SPECS[type];
+
+/** Lê a característica Unit Linked a partir da metadata do ativo. */
+export const isUnitBased = (type: AssetType, metadata?: Record<string, unknown> | null): boolean =>
+  UNIT_BASED_CAPABLE.includes(type) && metadata?.["unitBased"] === true;
+

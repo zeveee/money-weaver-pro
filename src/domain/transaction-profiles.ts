@@ -222,9 +222,38 @@ export const getTransactionLabel = (assetType: AssetType, type: TransactionType)
 export const getTransactionTypeOptions = (assetType: AssetType) =>
   getTransactionOptions(assetType).map((o) => ({ value: o.type, label: o.label }));
 
-/** Usa quantidade neste contexto (AssetType + tipo). */
-export const usesQuantity = (assetType: AssetType, type: TransactionType): boolean =>
-  getTransactionOption(assetType, type)?.usesQuantity ?? TRANSACTION_PROFILES[type].usesQuantity;
+
+/**
+ * Contexto do ativo que altera a semântica de unidades.
+ * `unitBased`: produto segurador/PPR baseado em Unidades de Participação (Unit Linked),
+ * onde reforços e resgates são expressos em UPs.
+ */
+export interface QuantityContext {
+  unitBased?: boolean;
+}
+
+/** Tipos com unidades quando o produto é baseado em UPs. */
+const UNIT_LINKED_MOVEMENTS: TransactionType[] = ["deposit", "withdrawal", "buy", "sell"];
+
+/** Tipos de ativo que podem ser baseados em Unidades de Participação. */
+export const UNIT_BASED_CAPABLE: AssetType[] = ["capitalization_insurance", "ppr"];
+
+/** Usa quantidade neste contexto (AssetType + tipo + características do ativo). */
+export const usesQuantity = (
+  assetType: AssetType,
+  type: TransactionType,
+  ctx: QuantityContext = {},
+): boolean => {
+  if (
+    ctx.unitBased &&
+    UNIT_BASED_CAPABLE.includes(assetType) &&
+    UNIT_LINKED_MOVEMENTS.includes(type)
+  ) {
+    return true;
+  }
+  return getTransactionOption(assetType, type)?.usesQuantity ?? TRANSACTION_PROFILES[type].usesQuantity;
+};
+
 
 export interface TransactionFormValues {
   type: TransactionType;
@@ -258,10 +287,17 @@ export function effectiveUnitPrice(
   return total / quantity;
 }
 
+/** Contexto de validação: características do ativo + posição disponível à data. */
+export interface TransactionValidationContext extends QuantityContext {
+  /** Quantidade detida à data do movimento (para validar alienações). */
+  availableQuantity?: number;
+}
+
 /** Validação pura do formulário de transação. */
 export function validateTransactionForm(
   assetType: AssetType,
   v: TransactionFormValues,
+  ctx: TransactionValidationContext = {},
 ): { ok: true } | { ok: false; message: string } {
   if (!getTransactionTypes(assetType).includes(v.type)) {
     return { ok: false, message: "Tipo de transação não suportado por este ativo." };
@@ -272,11 +308,22 @@ export function validateTransactionForm(
 
   const num = (s: string) => (s === "" ? NaN : Number(s));
 
-  if (usesQuantity(assetType, v.type)) {
+  if (usesQuantity(assetType, v.type, ctx)) {
     const q = num(v.quantity);
     if (!Number.isFinite(q) || q <= 0)
       return { ok: false, message: "Quantidade deve ser maior que zero." };
+
+    const isDisposal = TRANSACTION_PROFILES[v.type].direction === "out";
+    if (isDisposal && ctx.availableQuantity != null && q > ctx.availableQuantity + 1e-9) {
+      return {
+        ok: false,
+        message: `Quantidade superior à posição disponível nesta data (${Number(
+          ctx.availableQuantity.toFixed(8),
+        )}).`,
+      };
+    }
   }
+
 
   const amount = num(v.amount);
   if (!Number.isFinite(amount) || amount <= 0) {

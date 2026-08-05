@@ -21,18 +21,20 @@ const money = (value: number, currency: string) => {
 };
 
 export function ValuationFormDialog({
-  title, assetType, currency, quantity, valuation, onSubmit, loading,
+  title, assetType, currency, quantityAt, unitBased = false, valuation, onSubmit, loading,
 }: {
   title: string;
   assetType: AssetType;
   currency: string;
-  /** Quantidade derivada das transações (modo unit_price). */
-  quantity: number;
+  /** Quantidade derivada das transações à data indicada (modo unit_price). */
+  quantityAt: (date: string) => number;
+  /** Produto baseado em Unidades de Participação (Unit Linked). */
+  unitBased?: boolean;
   valuation?: AssetValuation;
   onSubmit: (input: ValuationWriteInput) => void;
   loading: boolean;
 }) {
-  const spec = getValuationSpec(assetType);
+  const spec = getValuationSpec(assetType, { unitBased });
   const [valuationDate, setValuationDate] = useState(valuation?.valuationDate ?? today());
   const [unitPrice, setUnitPrice] = useState(
     valuation?.unitPrice != null ? String(valuation.unitPrice) : "",
@@ -44,6 +46,12 @@ export function ValuationFormDialog({
     Boolean(valuation && valuation.unitPrice != null),
   );
   const [source, setSource] = useState(valuation?.source ?? "");
+
+  /** Quantidade detida à data da valorização (posição reconstruída cronologicamente). */
+  const quantity = useMemo(
+    () => (valuationDate ? quantityAt(valuationDate) : 0),
+    [quantityAt, valuationDate],
+  );
 
   const derivedTotal = useMemo(() => {
     const p = Number(unitPrice);
@@ -107,7 +115,7 @@ export function ValuationFormDialog({
                 onChange={(e) => setUnitPrice(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Quantidade derivada das transações: {quantity}
+                Quantidade detida a {valuationDate}: {Number(quantity.toFixed(8))}
                 {derivedTotal != null && (
                   <> → {spec.totalLabel}: {money(derivedTotal, currency)}</>
                 )}
