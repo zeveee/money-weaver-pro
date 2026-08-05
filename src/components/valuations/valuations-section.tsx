@@ -148,6 +148,15 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
                   ? "Custo da posição (sem valorização)"
                   : "Sem dados"}
             </p>
+            {current.mode === "derived" && latest?.unitPrice != null && (
+              <p className="text-xs text-muted-foreground">
+                Derivada: {money(latest.unitPrice, current.currency)} ×{" "}
+                {Number(refPosition.quantity.toFixed(8))} un.
+              </p>
+            )}
+            {current.mode === "manual" && (
+              <p className="text-xs text-muted-foreground">Valor manual (congelado)</p>
+            )}
           </div>
           <div>
             <p className="text-xs text-muted-foreground">
