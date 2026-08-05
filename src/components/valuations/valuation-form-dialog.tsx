@@ -35,6 +35,7 @@ export function ValuationFormDialog({
   loading: boolean;
 }) {
   const spec = getValuationSpec(assetType, { unitBased });
+  const derivable = spec.mode === "unit_price";
   const [valuationDate, setValuationDate] = useState(valuation?.valuationDate ?? today());
   const [unitPrice, setUnitPrice] = useState(
     valuation?.unitPrice != null ? String(valuation.unitPrice) : "",
@@ -42,8 +43,10 @@ export function ValuationFormDialog({
   const [totalValue, setTotalValue] = useState(
     valuation ? String(valuation.totalValue) : "",
   );
-  const [totalOverridden, setTotalOverridden] = useState(
-    Boolean(valuation && valuation.unitPrice != null),
+  // O modo manual NUNCA é inferido da presença de NAV: só o estado persistido
+  // `isManual` (ou a inexistência de modo derivado) o pode ativar.
+  const [manual, setManual] = useState(
+    derivable ? Boolean(valuation?.isManual) : true,
   );
   const [source, setSource] = useState(valuation?.source ?? "");
 
@@ -59,26 +62,21 @@ export function ValuationFormDialog({
     return p * quantity;
   }, [unitPrice, quantity]);
 
-  const effectiveTotal =
-    spec.mode === "unit_price"
-      ? totalOverridden && totalValue !== ""
-        ? Number(totalValue)
-        : (derivedTotal ?? 0)
-      : Number(totalValue);
+  const effectiveTotal = manual ? Number(totalValue) : (derivedTotal ?? 0);
 
   const submit = () => {
     if (!valuationDate) return toast.error("Data é obrigatória");
-    if (spec.mode === "unit_price" && unitPrice === "" && !totalOverridden)
-      return toast.error(`${spec.label} é obrigatório`);
+    if (!manual && unitPrice === "") return toast.error(`${spec.label} é obrigatório`);
     if (!Number.isFinite(effectiveTotal) || effectiveTotal < 0)
       return toast.error("Valor total inválido");
 
     onSubmit({
       valuationDate,
-      unitPrice: spec.mode === "unit_price" && unitPrice !== "" ? Number(unitPrice) : null,
+      unitPrice: derivable && unitPrice !== "" ? Number(unitPrice) : null,
       totalValue: effectiveTotal,
       currency,
       source: source.trim() || null,
+      isManual: manual,
     });
   };
 
