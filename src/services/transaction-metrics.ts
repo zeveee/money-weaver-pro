@@ -86,68 +86,35 @@ const inferIncomeKind = (type: Transaction["type"]): IncomeKind | undefined => {
 /** Posição derivada de um ativo (nunca introduzida manualmente). */
 export interface DerivedPosition {
   quantity: number;
-  /** Custo médio unitário, incluindo comissões e impostos das entradas. */
+  /** Custo médio unitário, recalculado apenas em aquisições. */
   averageCost: number;
-  /** Custo total da posição atual (quantidade × custo médio). */
+  /** Custo total da posição remanescente. */
   costBasis: number;
   /** Mais/menos-valia realizada nas saídas. */
   realizedGain: number;
-  /** Verdadeiro quando o ativo tem quantidade (ETF, ações, fundos, obrigações, cripto…). */
+  /** Verdadeiro quando o ativo tem quantidade (ETF, ações, fundos, UPs…). */
   tracksQuantity: boolean;
+  /** Transações com unidades em falta (dados incoerentes). */
+  inconsistentTransactionIds: string[];
 }
 
 /**
- * Média móvel ponderada sobre as transações ordenadas cronologicamente.
- * Para ativos sem quantidade, `quantity` fica a 0 e o custo é o capital líquido investido.
+ * Posição derivada. Delega no Position Engine, que reconstrói cronologicamente
+ * quantidade, custo médio e mais-valias realizadas.
  */
-export function derivePosition(assetType: AssetType, transactions: Transaction[]): DerivedPosition {
-  const ordered = [...transactions].sort(
-    (a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
-  );
-
-  let quantity = 0;
-  let costBasis = 0;
-  let realizedGain = 0;
-  let tracksQuantity = false;
-
-  for (const t of ordered) {
-    const profile = TRANSACTION_PROFILES[t.type];
-    const amount = Number(t.amount) || 0;
-    const costs = (Number(t.fees) || 0) + (Number(t.taxes) || 0);
-    const withQty = usesQuantityFor(assetType, t.type) && (Number(t.quantity) || 0) > 0;
-    if (withQty) tracksQuantity = true;
-
-    if (profile?.direction === "in") {
-      if (withQty) {
-        quantity += Number(t.quantity);
-        costBasis += amount + costs;
-      } else {
-        costBasis += amount + costs;
-      }
-    } else if (profile?.direction === "out") {
-      if (withQty) {
-        const qtyOut = Math.min(Number(t.quantity), quantity);
-        const unitCost = quantity > 0 ? costBasis / quantity : 0;
-        const removed = unitCost * qtyOut;
-        realizedGain += amount - costs - removed;
-        quantity -= qtyOut;
-        costBasis = Math.max(0, costBasis - removed);
-      } else {
-        const removed = Math.min(costBasis, amount);
-        realizedGain += amount - costs - removed;
-        costBasis = Math.max(0, costBasis - removed);
-      }
-    }
-  }
-
-  const hasQuantityModel =
-    tracksQuantity || getTransactionOption(assetType, "buy")?.usesQuantity === true;
-
+export function derivePosition(
+  assetType: AssetType,
+  transactions: Transaction[],
+  options: PositionOptions = {},
+): DerivedPosition {
+  const p = buildPosition(assetType, transactions, options);
   return {
-    quantity,
-    averageCost: quantity > 0 ? costBasis / quantity : 0,
-    costBasis,
-    realizedGain,
-    tracksQuantity: hasQuantityModel,
+    quantity: p.quantity,
+    averageCost: p.averageCost,
+    costBasis: p.costBasis,
+    realizedGain: p.realizedGain,
+    tracksQuantity: p.tracksQuantity,
+    inconsistentTransactionIds: p.inconsistentTransactionIds,
   };
 }
+
