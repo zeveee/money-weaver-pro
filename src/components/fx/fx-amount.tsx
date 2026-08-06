@@ -89,10 +89,13 @@ export function FxFootnote({
   currency,
   reportingCurrency,
   isEmpty,
+  usedSettlement,
 }: {
   currency: string;
   reportingCurrency: string;
   isEmpty: boolean;
+  /** Alguma transação usa o montante liquidado pela corretora. */
+  usedSettlement?: boolean;
 }) {
   if ((currency || "").toUpperCase() === (reportingCurrency || "").toUpperCase()) return null;
   return (
@@ -100,6 +103,8 @@ export function FxFootnote({
       Valores convertidos de {currency} para {reportingCurrency} à taxa do BCE da data de cada
       evento (o valor atual usa a taxa mais recente disponível). “*” indica taxa transportada do
       último dia útil conhecido.
+      {usedSettlement &&
+        " “†” indica montante efetivamente liquidado pela corretora — prevalece sobre a taxa do BCE."}
       {isEmpty && " Ainda não existem taxas carregadas — execute a sincronização FX."}
     </p>
   );
