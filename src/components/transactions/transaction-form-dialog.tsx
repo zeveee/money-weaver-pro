@@ -80,6 +80,8 @@ export function TransactionFormDialog({
   transaction,
   transactions = [],
   unitBased = false,
+  reportingCurrency,
+  fxTable = EMPTY_RATE_TABLE,
   onSubmit,
   loading,
 }: {
@@ -91,6 +93,10 @@ export function TransactionFormDialog({
   transactions?: Transaction[];
   /** Produto baseado em Unidades de Participação (Unit Linked). */
   unitBased?: boolean;
+  /** Moeda base da carteira; ativa o campo de montante liquidado quando difere. */
+  reportingCurrency?: string | null;
+  /** Catálogo de taxas já carregado pela secção (sem fetch adicional). */
+  fxTable?: FxRateTable;
   onSubmit: (input: TransactionWriteInput) => void;
   loading: boolean;
 }) {
@@ -99,6 +105,13 @@ export function TransactionFormDialog({
   );
   const set = (key: keyof TransactionFormValues, value: string) =>
     setValues((p) => ({ ...p, [key]: value }));
+
+  const reporting = (reportingCurrency ?? "").toUpperCase();
+  const existingSettlement = readSettlement(transaction?.metadata, reporting);
+  const [settlementOn, setSettlementOn] = useState(!!existingSettlement);
+  const [settlementAmount, setSettlementAmount] = useState(
+    existingSettlement ? String(existingSettlement.amount) : "",
+  );
 
   const profile = getTransactionProfile(values.type);
   const option = getTransactionOption(assetType, values.type);
