@@ -52,6 +52,7 @@ export const toExchangeRate = (r: Row): import("@/domain/types").ExchangeRate =>
   baseCurrency: r.base_currency as string,
   quoteCurrency: r.quote_currency as string,
   exchangeRate: Number(r.exchange_rate ?? 0),
+  source: (r.source as string) ?? "manual",
 });
 
 export const toAsset = (r: Row): Asset => ({
