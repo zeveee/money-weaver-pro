@@ -35,8 +35,10 @@ export async function listExchangeRates(
 
     if (query.since) q = q.gte("date", query.since);
     if (currencies.length > 0) {
-      const list = `(${currencies.join(",")})`;
-      q = q.or(`base_currency.in.${list},quote_currency.in.${list}`);
+      // Só os pares entre as moedas pedidas (inclui sempre o pivô, pelo que a
+      // triangulação continua possível). Filtrar por "base OU quote" traria o
+      // catálogo global inteiro, com centenas de milhares de linhas.
+      q = q.in("base_currency", currencies).in("quote_currency", currencies);
     }
 
     const { data, error } = await q;
