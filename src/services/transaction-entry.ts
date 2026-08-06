@@ -93,6 +93,7 @@ export function readEntry(
     fees: num(e["fees"]),
     taxes: num(e["taxes"]),
     rate,
+    entryDate: typeof e["entryDate"] === "string" ? e["entryDate"] : "",
     rateDate: typeof e["rateDate"] === "string" ? e["rateDate"] : "",
     path: (typeof e["path"] === "string" ? e["path"] : "direct") as FxPath,
     carriedForward: e["carriedForward"] === true,
