@@ -146,6 +146,34 @@ export function TransactionFormDialog({
   const isDisposal = profile.direction === "out";
   const showUnitPrice = withQuantity && qty > 0 && Number.isFinite(amount) && amount > 0;
 
+  // ---- Liquidação efetiva (opcional) ----
+  const nativeCurrency = (values.currency || "").toUpperCase();
+  const showSettlement = !!reporting && reporting !== nativeCurrency;
+  const gross = (Number.isFinite(amount) ? amount : 0) + fees + taxes;
+  const ecbResolution = useMemo(
+    () =>
+      showSettlement && values.occurredAt
+        ? rateAt(fxTable, nativeCurrency, reporting, new Date(values.occurredAt).toISOString())
+        : null,
+    [showSettlement, fxTable, nativeCurrency, reporting, values.occurredAt],
+  );
+  const ecbRate = ecbResolution?.status === "ok" ? ecbResolution.rate : null;
+  const ecbValue = ecbRate != null && gross > 0 ? gross * ecbRate : null;
+  const settledNumber = settlementAmount === "" ? NaN : Number(settlementAmount);
+  const settledRate =
+    Number.isFinite(settledNumber) && settledNumber > 0 && gross > 0
+      ? settledNumber / gross
+      : null;
+  const deviation =
+    settledRate != null && ecbRate ? (settledRate / ecbRate - 1) * 100 : null;
+
+  const toggleSettlement = (on: boolean) => {
+    setSettlementOn(on);
+    if (on && settlementAmount === "" && ecbValue != null) {
+      setSettlementAmount(String(Number(ecbValue.toFixed(2))));
+    }
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const result = validateTransactionForm(assetType, values, {
@@ -153,6 +181,14 @@ export function TransactionFormDialog({
       availableQuantity: available ?? undefined,
     });
     if (!result.ok) return toast.error(result.message);
+
+    let settlement: { amount: number; currency: string } | null = null;
+    if (showSettlement && settlementOn) {
+      if (!Number.isFinite(settledNumber) || settledNumber <= 0) {
+        return toast.error(`Indique o montante liquidado em ${reporting}.`);
+      }
+      settlement = { amount: settledNumber, currency: reporting };
+    }
 
     const quantity = withQuantity ? qty : 0;
     onSubmit({
@@ -166,10 +202,13 @@ export function TransactionFormDialog({
       fees,
       taxes,
       notes: values.notes.trim() === "" ? null : values.notes.trim(),
-      metadata: {
-        ...(transaction?.metadata ?? {}),
-        ...(option?.incomeKind ? { incomeKind: option.incomeKind } : {}),
-      },
+      metadata: withSettlement(
+        {
+          ...(transaction?.metadata ?? {}),
+          ...(option?.incomeKind ? { incomeKind: option.incomeKind } : {}),
+        },
+        settlement,
+      ),
     });
   };
 
