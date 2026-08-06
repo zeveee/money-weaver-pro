@@ -241,7 +241,18 @@ export function TransactionsSection({
                       </span>
                     </div>
                     <p className="text-sm">
-                      {money(t.amount, t.currency)}
+                      {showFx ? (
+                        <FxAmount
+                          table={fxTable}
+                          amount={t.amount}
+                          currency={t.currency}
+                          reportingCurrency={reporting}
+                          date={t.occurredAt}
+                          inline
+                        />
+                      ) : (
+                        money(t.amount, t.currency)
+                      )}
                       {withQty && t.quantity > 0 && (
                         <span className="text-muted-foreground">
                           {" "}
