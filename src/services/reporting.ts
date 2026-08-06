@@ -23,6 +23,10 @@ import {
   type Money,
 } from "@/services/fx";
 import { resolveValuationValue, type QuantityAt } from "@/services/valuation-metrics";
+import { effectiveRate, grossNative, readSettlement } from "@/services/settlement";
+
+/** Origem da taxa aplicada: referência do BCE ou liquidação efetiva da corretora. */
+export type ReportedRateSource = "ecb" | "settlement";
 
 /** Valor com o seu par nativo/reporting e a taxa aplicada — base da análise cambial. */
 export interface ReportedAmount {
@@ -30,6 +34,7 @@ export interface ReportedAmount {
   reported: Money | null;
   rate: FxRate | null;
   date: ISODate;
+  source: ReportedRateSource;
 }
 
 const report = (
@@ -40,22 +45,40 @@ const report = (
 ): ReportedAmount => {
   const c = convert(table, native, to, date);
   return c.status === "ok"
-    ? { native, reported: c.money, rate: c.rate, date }
-    : { native, reported: null, rate: null, date };
+    ? { native, reported: c.money, rate: c.rate, date, source: "ecb" }
+    : { native, reported: null, rate: null, date, source: "ecb" };
 };
 
-/** Converte uma transação à taxa da SUA data (nunca à taxa de hoje). */
+/**
+ * Converte uma transação à taxa da SUA data (nunca à taxa de hoje).
+ * Quando existe montante liquidado na moeda de reporting, esse valor prevalece
+ * sobre a taxa BCE e a taxa efetiva é derivada dele.
+ */
 export function reportTransaction(
   table: FxRateTable,
   transaction: Transaction,
   reportingCurrency: string,
 ): ReportedAmount {
   const date = toRateDate(transaction.occurredAt);
-  const gross =
-    (Number(transaction.amount) || 0) +
-    (Number(transaction.fees) || 0) +
-    (Number(transaction.taxes) || 0);
-  return report(table, { amount: gross, currency: transaction.currency }, reportingCurrency, date);
+  const gross = grossNative(transaction);
+  const native = { amount: gross, currency: transaction.currency };
+  const to = (reportingCurrency || "").toUpperCase();
+
+  const settlement = readSettlement(transaction.metadata, to);
+  if (settlement) {
+    const rate = effectiveRate(settlement.amount, gross);
+    if (rate != null) {
+      return {
+        native,
+        reported: { amount: settlement.amount, currency: to },
+        rate: { rate, rateDate: date, path: "direct", carriedForward: false },
+        date,
+        source: "settlement",
+      };
+    }
+  }
+
+  return report(table, native, reportingCurrency, date);
 }
 
 /** Converte uma valorização à taxa da SUA data. */
