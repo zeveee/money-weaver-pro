@@ -198,6 +198,7 @@ export function reportedTransactionTotals(
     investedCapital: Math.max(0, inflows - outflows),
     missingCurrencies: [...missing].sort(),
     usedCarryForward,
+    usedSettlement,
   };
 }
 
