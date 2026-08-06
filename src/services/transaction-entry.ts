@@ -180,7 +180,7 @@ export function convertEntry(
   let entry: TransactionEntry;
 
   if (reuse) {
-    entry = { ...reuse, amount, currency: from, fees, taxes };
+    entry = { ...reuse, amount, currency: from, fees, taxes, entryDate: date };
   } else {
     const manual = Number(options.manualRate);
     if (Number.isFinite(manual) && manual > 0) {
@@ -190,6 +190,7 @@ export function convertEntry(
         fees,
         taxes,
         rate: manual,
+        entryDate: date,
         rateDate: date,
         path: "direct",
         carriedForward: false,
@@ -205,6 +206,7 @@ export function convertEntry(
         fees,
         taxes,
         rate: resolution.rate,
+        entryDate: date,
         rateDate: resolution.rateDate,
         path: resolution.path,
         carriedForward: resolution.carriedForward,
