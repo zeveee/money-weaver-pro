@@ -195,6 +195,7 @@ export function TransactionsSection({
               currency={asset.currency}
               reportingCurrency={reporting}
               isEmpty={fxEmpty}
+              usedSettlement={!!reported?.usedSettlement}
             />
             {reported && reported.missingCurrencies.length > 0 && (
               <p className="text-xs text-destructive">
