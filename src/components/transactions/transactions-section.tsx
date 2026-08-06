@@ -47,7 +47,13 @@ const INCOME_KIND_LABEL: Record<string, string> = {
   rent: "Rendas",
 };
 
-export function TransactionsSection({ asset }: { asset: Asset }) {
+export function TransactionsSection({
+  asset,
+  reportingCurrency,
+}: {
+  asset: Asset;
+  reportingCurrency?: string | null;
+}) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
