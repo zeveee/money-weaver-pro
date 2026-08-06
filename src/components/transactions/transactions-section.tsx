@@ -290,6 +290,8 @@ export function TransactionsSection({
                         transactions={transactions}
                         unitBased={unitBased}
                         transaction={t}
+                        reportingCurrency={reportingCurrency}
+                        fxTable={fxTable}
                         onSubmit={(input) => updateM.mutate({ id: t.id, input })}
                         loading={updateM.isPending}
                       />
