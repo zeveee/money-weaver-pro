@@ -108,8 +108,8 @@ export function reportCurrentValue(
   const c = convert(table, native, reportingCurrency, null);
   const date = c.status === "ok" ? c.rate.rateDate : toRateDate(new Date().toISOString());
   return c.status === "ok"
-    ? { native, reported: c.money, rate: c.rate, date }
-    : { native, reported: null, rate: null, date };
+    ? { native, reported: c.money, rate: c.rate, date, source: "ecb" }
+    : { native, reported: null, rate: null, date, source: "ecb" };
 }
 
 export interface ReportedTotals {
