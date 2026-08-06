@@ -38,6 +38,7 @@ import { formatDateLabel } from "@/lib/date-format";
 import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
 import { useFxTable } from "@/hooks/use-fx-table";
 import { reportedTransactionTotals } from "@/services/reporting";
+import { settlementRate } from "@/services/settlement";
 import { FxAmount, FxFootnote } from "@/components/fx/fx-amount";
 
 const dateLabel = (iso: string) => formatDateLabel(iso);
