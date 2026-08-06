@@ -97,6 +97,6 @@ Arquitetura recomendada (implementação posterior):
 
 ## Pontos que precisam da tua decisão
 
-- Moeda pivô: EUR (natural para BCE/Frankfurter) ou USD.
+- Moeda pivô: EUR (decidido), alinhado com a futura API do BCE.
 - Valor atual: taxa mais recente disponível (recomendado) ou estritamente a taxa da data da valuation.
 - Comportamento quando falta taxa: bloquear o agregado com aviso (recomendado) ou aproximar com a taxa mais próxima anterior sem avisar.
