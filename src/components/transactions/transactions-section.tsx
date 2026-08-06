@@ -134,9 +134,12 @@ export function TransactionsSection({
             currency={asset.currency}
             transactions={transactions}
             unitBased={unitBased}
+            reportingCurrency={reportingCurrency}
+            fxTable={fxTable}
             onSubmit={(input) => createM.mutate(input)}
             loading={createM.isPending}
           />
+
 
         </Dialog>
       </CardHeader>
