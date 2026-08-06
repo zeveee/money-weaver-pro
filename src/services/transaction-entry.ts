@@ -223,3 +223,19 @@ export function convertEntry(
     frozen: reuse != null,
   };
 }
+
+/**
+ * Montante bruto realmente movimentado na moeda de reporting, quando a
+ * transação foi introduzida nessa moeda. Evita reconverter nativo→reporting
+ * um valor que o utilizador já introduziu na moeda da carteira.
+ */
+export function entryReportedGross(
+  metadata: Record<string, unknown> | null | undefined,
+  reportingCurrency: string,
+): number | null {
+  const entry = readEntry(metadata);
+  if (!entry) return null;
+  if (!same(entry.currency, reportingCurrency)) return null;
+  const gross = entry.amount + entry.fees + entry.taxes;
+  return gross > 0 ? gross : null;
+}
