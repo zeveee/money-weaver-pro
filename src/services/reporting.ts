@@ -23,6 +23,10 @@ import {
   type Money,
 } from "@/services/fx";
 import { resolveValuationValue, type QuantityAt } from "@/services/valuation-metrics";
+import { effectiveRate, grossNative, readSettlement } from "@/services/settlement";
+
+/** Origem da taxa aplicada: referência do BCE ou liquidação efetiva da corretora. */
+export type ReportedRateSource = "ecb" | "settlement";
 
 /** Valor com o seu par nativo/reporting e a taxa aplicada — base da análise cambial. */
 export interface ReportedAmount {
@@ -30,6 +34,7 @@ export interface ReportedAmount {
   reported: Money | null;
   rate: FxRate | null;
   date: ISODate;
+  source: ReportedRateSource;
 }
 
 const report = (
@@ -40,22 +45,40 @@ const report = (
 ): ReportedAmount => {
   const c = convert(table, native, to, date);
   return c.status === "ok"
-    ? { native, reported: c.money, rate: c.rate, date }
-    : { native, reported: null, rate: null, date };
+    ? { native, reported: c.money, rate: c.rate, date, source: "ecb" }
+    : { native, reported: null, rate: null, date, source: "ecb" };
 };
 
-/** Converte uma transação à taxa da SUA data (nunca à taxa de hoje). */
+/**
+ * Converte uma transação à taxa da SUA data (nunca à taxa de hoje).
+ * Quando existe montante liquidado na moeda de reporting, esse valor prevalece
+ * sobre a taxa BCE e a taxa efetiva é derivada dele.
+ */
 export function reportTransaction(
   table: FxRateTable,
   transaction: Transaction,
   reportingCurrency: string,
 ): ReportedAmount {
   const date = toRateDate(transaction.occurredAt);
-  const gross =
-    (Number(transaction.amount) || 0) +
-    (Number(transaction.fees) || 0) +
-    (Number(transaction.taxes) || 0);
-  return report(table, { amount: gross, currency: transaction.currency }, reportingCurrency, date);
+  const gross = grossNative(transaction);
+  const native = { amount: gross, currency: transaction.currency };
+  const to = (reportingCurrency || "").toUpperCase();
+
+  const settlement = readSettlement(transaction.metadata, to);
+  if (settlement) {
+    const rate = effectiveRate(settlement.amount, gross);
+    if (rate != null) {
+      return {
+        native,
+        reported: { amount: settlement.amount, currency: to },
+        rate: { rate, rateDate: date, path: "direct", carriedForward: false },
+        date,
+        source: "settlement",
+      };
+    }
+  }
+
+  return report(table, native, reportingCurrency, date);
 }
 
 /** Converte uma valorização à taxa da SUA data. */
@@ -85,8 +108,8 @@ export function reportCurrentValue(
   const c = convert(table, native, reportingCurrency, null);
   const date = c.status === "ok" ? c.rate.rateDate : toRateDate(new Date().toISOString());
   return c.status === "ok"
-    ? { native, reported: c.money, rate: c.rate, date }
-    : { native, reported: null, rate: null, date };
+    ? { native, reported: c.money, rate: c.rate, date, source: "ecb" }
+    : { native, reported: null, rate: null, date, source: "ecb" };
 }
 
 export interface ReportedTotals {
@@ -102,11 +125,15 @@ export interface ReportedTotals {
   missingCurrencies: string[];
   /** Verdadeiro quando alguma conversão usou carry-forward da última taxa conhecida. */
   usedCarryForward: boolean;
+  /** Verdadeiro quando alguma transação usou o montante liquidado pela corretora. */
+  usedSettlement: boolean;
 }
 
 /**
  * Totais de transações já convertidos para a moeda de reporting.
  * Espelha `transactionTotals` (moeda nativa) sem o substituir.
+ *
+ * Prioridade por evento: montante liquidado (taxa efetiva) → taxa BCE à data.
  */
 export function reportedTransactionTotals(
   table: FxRateTable,
@@ -118,19 +145,29 @@ export function reportedTransactionTotals(
   let income = 0;
   let costs = 0;
   let usedCarryForward = false;
+  let usedSettlement = false;
   const missing = new Set<string>();
   const to = (reportingCurrency || "").toUpperCase();
 
   for (const t of transactions) {
     const date = toRateDate(t.occurredAt);
-    const resolution = rateAt(table, t.currency, to, date);
-    if (resolution.status === "missing") {
-      missing.add((t.currency || "").toUpperCase());
-      continue;
-    }
-    if (resolution.carriedForward) usedCarryForward = true;
+    const settlement = readSettlement(t.metadata, to);
+    const settled = settlement ? effectiveRate(settlement.amount, grossNative(t)) : null;
 
-    const fx = resolution.rate;
+    let fx: number;
+    if (settled != null) {
+      fx = settled;
+      usedSettlement = true;
+    } else {
+      const resolution = rateAt(table, t.currency, to, date);
+      if (resolution.status === "missing") {
+        missing.add((t.currency || "").toUpperCase());
+        continue;
+      }
+      if (resolution.carriedForward) usedCarryForward = true;
+      fx = resolution.rate;
+    }
+
     const amount = (Number(t.amount) || 0) * fx;
     costs += ((Number(t.fees) || 0) + (Number(t.taxes) || 0)) * fx;
 
@@ -161,6 +198,7 @@ export function reportedTransactionTotals(
     investedCapital: Math.max(0, inflows - outflows),
     missingCurrencies: [...missing].sort(),
     usedCarryForward,
+    usedSettlement,
   };
 }
 

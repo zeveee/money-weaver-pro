@@ -38,6 +38,7 @@ import { formatDateLabel } from "@/lib/date-format";
 import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
 import { useFxTable } from "@/hooks/use-fx-table";
 import { reportedTransactionTotals } from "@/services/reporting";
+import { settlementRate } from "@/services/settlement";
 import { FxAmount, FxFootnote } from "@/components/fx/fx-amount";
 
 const dateLabel = (iso: string) => formatDateLabel(iso);
@@ -133,9 +134,12 @@ export function TransactionsSection({
             currency={asset.currency}
             transactions={transactions}
             unitBased={unitBased}
+            reportingCurrency={reportingCurrency}
+            fxTable={fxTable}
             onSubmit={(input) => createM.mutate(input)}
             loading={createM.isPending}
           />
+
 
         </Dialog>
       </CardHeader>
@@ -191,6 +195,7 @@ export function TransactionsSection({
               currency={asset.currency}
               reportingCurrency={reporting}
               isEmpty={fxEmpty}
+              usedSettlement={!!reported?.usedSettlement}
             />
             {reported && reported.missingCurrencies.length > 0 && (
               <p className="text-xs text-destructive">
@@ -248,6 +253,10 @@ export function TransactionsSection({
                           currency={t.currency}
                           reportingCurrency={reporting}
                           date={t.occurredAt}
+                          settled={(() => {
+                            const rate = settlementRate(t, reporting);
+                            return rate == null ? null : t.amount * rate;
+                          })()}
                           inline
                         />
                       ) : (
@@ -286,6 +295,8 @@ export function TransactionsSection({
                         transactions={transactions}
                         unitBased={unitBased}
                         transaction={t}
+                        reportingCurrency={reportingCurrency}
+                        fxTable={fxTable}
                         onSubmit={(input) => updateM.mutate({ id: t.id, input })}
                         loading={updateM.isPending}
                       />

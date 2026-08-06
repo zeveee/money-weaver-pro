@@ -14,6 +14,9 @@ import {
 } from "@/domain/transaction-profiles";
 import type { TransactionWriteInput } from "@/repositories/transactions";
 import { availableQuantityAt } from "@/services/position-engine";
+import { EMPTY_RATE_TABLE, rateAt, type FxRateTable } from "@/services/fx";
+import { readSettlement, withSettlement } from "@/services/settlement";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,6 +80,8 @@ export function TransactionFormDialog({
   transaction,
   transactions = [],
   unitBased = false,
+  reportingCurrency,
+  fxTable = EMPTY_RATE_TABLE,
   onSubmit,
   loading,
 }: {
@@ -88,6 +93,10 @@ export function TransactionFormDialog({
   transactions?: Transaction[];
   /** Produto baseado em Unidades de Participação (Unit Linked). */
   unitBased?: boolean;
+  /** Moeda base da carteira; ativa o campo de montante liquidado quando difere. */
+  reportingCurrency?: string | null;
+  /** Catálogo de taxas já carregado pela secção (sem fetch adicional). */
+  fxTable?: FxRateTable;
   onSubmit: (input: TransactionWriteInput) => void;
   loading: boolean;
 }) {
@@ -96,6 +105,13 @@ export function TransactionFormDialog({
   );
   const set = (key: keyof TransactionFormValues, value: string) =>
     setValues((p) => ({ ...p, [key]: value }));
+
+  const reporting = (reportingCurrency ?? "").toUpperCase();
+  const existingSettlement = readSettlement(transaction?.metadata, reporting);
+  const [settlementOn, setSettlementOn] = useState(!!existingSettlement);
+  const [settlementAmount, setSettlementAmount] = useState(
+    existingSettlement ? String(existingSettlement.amount) : "",
+  );
 
   const profile = getTransactionProfile(values.type);
   const option = getTransactionOption(assetType, values.type);
@@ -130,6 +146,34 @@ export function TransactionFormDialog({
   const isDisposal = profile.direction === "out";
   const showUnitPrice = withQuantity && qty > 0 && Number.isFinite(amount) && amount > 0;
 
+  // ---- Liquidação efetiva (opcional) ----
+  const nativeCurrency = (values.currency || "").toUpperCase();
+  const showSettlement = !!reporting && reporting !== nativeCurrency;
+  const gross = (Number.isFinite(amount) ? amount : 0) + fees + taxes;
+  const ecbResolution = useMemo(
+    () =>
+      showSettlement && values.occurredAt
+        ? rateAt(fxTable, nativeCurrency, reporting, new Date(values.occurredAt).toISOString())
+        : null,
+    [showSettlement, fxTable, nativeCurrency, reporting, values.occurredAt],
+  );
+  const ecbRate = ecbResolution?.status === "ok" ? ecbResolution.rate : null;
+  const ecbValue = ecbRate != null && gross > 0 ? gross * ecbRate : null;
+  const settledNumber = settlementAmount === "" ? NaN : Number(settlementAmount);
+  const settledRate =
+    Number.isFinite(settledNumber) && settledNumber > 0 && gross > 0
+      ? settledNumber / gross
+      : null;
+  const deviation =
+    settledRate != null && ecbRate ? (settledRate / ecbRate - 1) * 100 : null;
+
+  const toggleSettlement = (on: boolean) => {
+    setSettlementOn(on);
+    if (on && settlementAmount === "" && ecbValue != null) {
+      setSettlementAmount(String(Number(ecbValue.toFixed(2))));
+    }
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const result = validateTransactionForm(assetType, values, {
@@ -137,6 +181,14 @@ export function TransactionFormDialog({
       availableQuantity: available ?? undefined,
     });
     if (!result.ok) return toast.error(result.message);
+
+    let settlement: { amount: number; currency: string } | null = null;
+    if (showSettlement && settlementOn) {
+      if (!Number.isFinite(settledNumber) || settledNumber <= 0) {
+        return toast.error(`Indique o montante liquidado em ${reporting}.`);
+      }
+      settlement = { amount: settledNumber, currency: reporting };
+    }
 
     const quantity = withQuantity ? qty : 0;
     onSubmit({
@@ -150,10 +202,13 @@ export function TransactionFormDialog({
       fees,
       taxes,
       notes: values.notes.trim() === "" ? null : values.notes.trim(),
-      metadata: {
-        ...(transaction?.metadata ?? {}),
-        ...(option?.incomeKind ? { incomeKind: option.incomeKind } : {}),
-      },
+      metadata: withSettlement(
+        {
+          ...(transaction?.metadata ?? {}),
+          ...(option?.incomeKind ? { incomeKind: option.incomeKind } : {}),
+        },
+        settlement,
+      ),
     });
   };
 
@@ -260,6 +315,55 @@ export function TransactionFormDialog({
             />
           </div>
         </div>
+
+        {showSettlement && (
+          <div className="space-y-2 rounded-md border p-3">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="t-settlement"
+                checked={settlementOn}
+                onCheckedChange={(v) => toggleSettlement(v === true)}
+              />
+              <Label htmlFor="t-settlement" className="text-sm font-normal">
+                Conheço o montante liquidado em {reporting}
+              </Label>
+            </div>
+            {settlementOn ? (
+              <>
+                <Input
+                  type="number"
+                  step="any"
+                  min={0}
+                  value={settlementAmount}
+                  onChange={(e) => setSettlementAmount(e.target.value)}
+                  placeholder={ecbValue != null ? ecbValue.toFixed(2) : ""}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {settledRate != null ? (
+                    <>
+                      Taxa efetiva: 1 {nativeCurrency} = {settledRate.toPrecision(6)} {reporting}
+                      {deviation != null && (
+                        <>
+                          {" "}
+                          · {deviation >= 0 ? "+" : ""}
+                          {deviation.toFixed(2)}% vs BCE
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    `Montante realmente debitado/creditado pela corretora, em ${reporting}.`
+                  )}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Por defeito converte-se à taxa do BCE da data
+                {ecbValue != null && <> (≈ {ecbValue.toFixed(2)} {reporting})</>}.
+              </p>
+            )}
+          </div>
+        )}
+
 
         {showUnitPrice && (
           <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
