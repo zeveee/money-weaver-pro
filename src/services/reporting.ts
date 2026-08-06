@@ -12,7 +12,8 @@
  * intocado: este módulo é uma camada paralela, não uma substituição.
  */
 
-import type { AssetValuation, ISODate, Transaction } from "@/domain/types";
+import type { AssetType, AssetValuation, ISODate, Transaction } from "@/domain/types";
+import { buildPosition, type Position, type PositionOptions } from "@/services/position-engine";
 import { TRANSACTION_PROFILES } from "@/domain/transaction-profiles";
 import {
   convert,
@@ -249,4 +250,97 @@ export function attributeFxPerformance(
     crossEffect,
     total: assetEffect + currencyEffect + crossEffect,
   };
+}
+
+// ---------- Projeção de transações para a moeda de reporting ----------
+
+/** Taxa aplicável a uma transação: liquidação/introdução declarada → BCE à data. */
+function transactionRate(
+  table: FxRateTable,
+  t: Transaction,
+  to: string,
+): { rate: number; source: ReportedRateSource; carriedForward: boolean } | null {
+  const declared = readSettlement(t.metadata, to);
+  const settledAmount = declared?.amount ?? entryReportedGross(t.metadata, to);
+  const settled = settledAmount == null ? null : effectiveRate(settledAmount, grossNative(t));
+  if (settled != null) return { rate: settled, source: "settlement", carriedForward: false };
+
+  const resolution = rateAt(table, t.currency, to, toRateDate(t.occurredAt));
+  if (resolution.status === "missing") return null;
+  return { rate: resolution.rate, source: "ecb", carriedForward: resolution.carriedForward };
+}
+
+export interface ProjectedTransactions {
+  /** Moeda de reporting das transações projetadas. */
+  currency: string;
+  /** Transações com montante, comissões e impostos já convertidos à taxa do seu evento. */
+  transactions: Transaction[];
+  /** Moedas sem taxa disponível; as transações afetadas foram excluídas. */
+  missingCurrencies: string[];
+  usedCarryForward: boolean;
+  usedSettlement: boolean;
+}
+
+/**
+ * Projeta cada transação para a moeda de reporting à taxa da SUA data.
+ * A quantidade e o tipo são preservados, pelo que o Position Engine pode
+ * correr sobre o resultado e produzir custo médio, custo da posição e
+ * mais-valias realizadas já em moeda de reporting.
+ */
+export function projectTransactions(
+  table: FxRateTable,
+  transactions: Transaction[],
+  reportingCurrency: string,
+): ProjectedTransactions {
+  const to = (reportingCurrency || "").toUpperCase();
+  const out: Transaction[] = [];
+  const missing = new Set<string>();
+  let usedCarryForward = false;
+  let usedSettlement = false;
+
+  for (const t of transactions) {
+    const resolved = transactionRate(table, t, to);
+    if (!resolved) {
+      missing.add((t.currency || "").toUpperCase());
+      continue;
+    }
+    if (resolved.source === "settlement") usedSettlement = true;
+    if (resolved.carriedForward) usedCarryForward = true;
+
+    const fx = resolved.rate;
+    const quantity = Number(t.quantity) || 0;
+    const amount = (Number(t.amount) || 0) * fx;
+    out.push({
+      ...t,
+      amount,
+      fees: (Number(t.fees) || 0) * fx,
+      taxes: (Number(t.taxes) || 0) * fx,
+      unitPrice: quantity > 0 ? amount / quantity : (Number(t.unitPrice) || 0) * fx,
+      currency: to,
+    });
+  }
+
+  return {
+    currency: to,
+    transactions: out,
+    missingCurrencies: [...missing].sort(),
+    usedCarryForward,
+    usedSettlement,
+  };
+}
+
+/**
+ * Posição reconstruída em moeda de reporting: o mesmo algoritmo cronológico do
+ * Position Engine, aplicado a transações já convertidas evento a evento.
+ * O plano nativo mantém-se intocado.
+ */
+export function reportedPosition(
+  table: FxRateTable,
+  assetType: AssetType,
+  transactions: Transaction[],
+  reportingCurrency: string,
+  options: PositionOptions = {},
+): ProjectedTransactions & { position: Position } {
+  const projected = projectTransactions(table, transactions, reportingCurrency);
+  return { ...projected, position: buildPosition(assetType, projected.transactions, options) };
 }
