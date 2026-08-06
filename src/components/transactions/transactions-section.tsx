@@ -252,6 +252,10 @@ export function TransactionsSection({
                           currency={t.currency}
                           reportingCurrency={reporting}
                           date={t.occurredAt}
+                          settled={(() => {
+                            const rate = settlementRate(t, reporting);
+                            return rate == null ? null : t.amount * rate;
+                          })()}
                           inline
                         />
                       ) : (
