@@ -29,6 +29,8 @@ export interface TransactionEntry {
   taxes: number;
   /** Fator multiplicativo: `montante(entrada) × rate = montante(nativo)`. */
   rate: number;
+  /** Data do evento que originou o snapshot (base da procura da taxa). */
+  entryDate: ISODate;
   /** Data efetiva da taxa (pode ser anterior à data do evento: carry-forward). */
   rateDate: ISODate;
   path: FxPath;
