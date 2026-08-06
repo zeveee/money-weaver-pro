@@ -29,6 +29,8 @@ export interface TransactionEntry {
   taxes: number;
   /** Fator multiplicativo: `montante(entrada) × rate = montante(nativo)`. */
   rate: number;
+  /** Data do evento que originou o snapshot (base da procura da taxa). */
+  entryDate: ISODate;
   /** Data efetiva da taxa (pode ser anterior à data do evento: carry-forward). */
   rateDate: ISODate;
   path: FxPath;
@@ -91,6 +93,7 @@ export function readEntry(
     fees: num(e["fees"]),
     taxes: num(e["taxes"]),
     rate,
+    entryDate: typeof e["entryDate"] === "string" ? e["entryDate"] : "",
     rateDate: typeof e["rateDate"] === "string" ? e["rateDate"] : "",
     path: (typeof e["path"] === "string" ? e["path"] : "direct") as FxPath,
     carriedForward: e["carriedForward"] === true,
@@ -117,19 +120,27 @@ export const grossEntry = (input: Pick<EntryInput, "amount" | "fees" | "taxes">)
 /**
  * A introdução congelada continua a descrever exatamente estes valores?
  * Só então a taxa antiga pode ser reutilizada sem recalcular.
+ *
+ * A data do evento entra na comparação: editar a data invalida o snapshot e
+ * força nova procura da taxa histórica. Snapshots legados (sem `entryDate`)
+ * usam a `rateDate` gravada como proxy — sem migração de dados.
  */
 export function entryMatches(
   frozen: TransactionEntry | null | undefined,
   input: EntryInput,
 ): boolean {
   if (!frozen) return false;
+  const date = toRateDate(input.occurredAt);
+  const frozenDate = frozen.entryDate || frozen.rateDate;
   return (
+    frozenDate === date &&
     same(frozen.currency, input.currency) &&
     frozen.amount === num(input.amount) &&
     frozen.fees === num(input.fees) &&
     frozen.taxes === num(input.taxes)
   );
 }
+
 
 export interface ConvertEntryOptions {
   /** Introdução já congelada (edição): reutilizada quando continua a aplicar-se. */
@@ -177,7 +188,7 @@ export function convertEntry(
   let entry: TransactionEntry;
 
   if (reuse) {
-    entry = { ...reuse, amount, currency: from, fees, taxes };
+    entry = { ...reuse, amount, currency: from, fees, taxes, entryDate: date };
   } else {
     const manual = Number(options.manualRate);
     if (Number.isFinite(manual) && manual > 0) {
@@ -187,6 +198,7 @@ export function convertEntry(
         fees,
         taxes,
         rate: manual,
+        entryDate: date,
         rateDate: date,
         path: "direct",
         carriedForward: false,
@@ -202,6 +214,7 @@ export function convertEntry(
         fees,
         taxes,
         rate: resolution.rate,
+        entryDate: date,
         rateDate: resolution.rateDate,
         path: resolution.path,
         carriedForward: resolution.carriedForward,

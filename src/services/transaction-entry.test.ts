@@ -110,6 +110,51 @@ describe("convertEntry", () => {
     expect(again.frozen).toBe(false);
     expect(again.entry?.rate).toBe(1.9);
   });
+
+  it("recalcula quando o utilizador edita APENAS a data", () => {
+    const first = convertEntry(table, input(), "USD", { now });
+    if (first.status !== "ok" || !first.entry) throw new Error("esperava conversão");
+    expect(first.entry.entryDate).toBe("2024-01-05");
+
+    const again = convertEntry(table, input({ occurredAt: "2024-01-02T10:00:00.000Z" }), "USD", {
+      frozen: first.entry,
+      now,
+    });
+    if (again.status !== "ok") throw new Error("esperava ok");
+    expect(again.frozen).toBe(false);
+    expect(again.entry).toMatchObject({ rate: 1.1, rateDate: "2024-01-02", entryDate: "2024-01-02" });
+    expect(again.native.amount).toBeCloseTo(187, 10);
+  });
+
+  it("snapshot legado sem entryDate é reconstruído ao mudar a data", () => {
+    const legacy = readEntry({
+      entry: {
+        amount: 170,
+        currency: "EUR",
+        fees: 2,
+        taxes: 1,
+        rate: 1.2,
+        rateDate: "2024-01-05",
+        path: "direct",
+        carriedForward: false,
+        source: "ecb",
+        convertedAt: now(),
+      },
+    });
+    expect(legacy?.entryDate).toBe("");
+
+    const kept = convertEntry(table, input(), "USD", { frozen: legacy, now });
+    if (kept.status !== "ok") throw new Error("esperava ok");
+    expect(kept.frozen).toBe(true);
+
+    const moved = convertEntry(table, input({ occurredAt: "2024-01-02T10:00:00.000Z" }), "USD", {
+      frozen: legacy,
+      now,
+    });
+    if (moved.status !== "ok") throw new Error("esperava ok");
+    expect(moved.frozen).toBe(false);
+    expect(moved.entry?.rate).toBe(1.1);
+  });
 });
 
 describe("metadados", () => {
@@ -119,12 +164,14 @@ describe("metadados", () => {
     fees: 0,
     taxes: 0,
     rate: 1.1712,
+    entryDate: "2024-01-05",
     rateDate: "2024-01-05",
     path: "direct",
     carriedForward: false,
     source: "ecb",
     convertedAt: now(),
   };
+
 
   it("escreve e lê a introdução original", () => {
     const meta = withEntry({ incomeKind: "dividend" }, entry);
