@@ -39,6 +39,7 @@ import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/
 import { useFxTable } from "@/hooks/use-fx-table";
 import { reportedTransactionTotals } from "@/services/reporting";
 import { settlementRate } from "@/services/settlement";
+import { readEntry } from "@/services/transaction-entry";
 import { FxAmount, FxFootnote } from "@/components/fx/fx-amount";
 
 const dateLabel = (iso: string) => formatDateLabel(iso);
@@ -109,9 +110,16 @@ export function TransactionsSection({
   // moeda base da carteira. O plano nativo acima mantém-se intocado.
   const reporting = (reportingCurrency ?? "").toUpperCase();
   const showFx = !!reporting && reporting !== asset.currency.toUpperCase();
-  const { table: fxTable, isEmpty: fxEmpty } = useFxTable([asset.currency], {
-    enabled: showFx,
-  });
+  // Inclui também as moedas em que as transações foram introduzidas: podem
+  // diferir tanto da moeda do ativo como da moeda da carteira.
+  const entryCurrencies = useMemo(
+    () => transactions.map((t) => readEntry(t.metadata)?.currency ?? null),
+    [transactions],
+  );
+  const { table: fxTable, isEmpty: fxEmpty } = useFxTable(
+    [asset.currency, reporting, ...entryCurrencies],
+    { enabled: showFx || entryCurrencies.some(Boolean) },
+  );
   const reported = useMemo(
     () => (showFx ? reportedTransactionTotals(fxTable, transactions, reporting) : null),
     [showFx, fxTable, transactions, reporting],
@@ -275,6 +283,20 @@ export function TransactionsSection({
                         </span>
                       )}
                     </p>
+                    {(() => {
+                      const entry = readEntry(t.metadata);
+                      if (!entry) return null;
+                      return (
+                        <p className="text-xs text-muted-foreground">
+                          introduzido: {money(entry.amount, entry.currency)} · 1 {entry.currency} ={" "}
+                          {entry.rate.toPrecision(6)} {t.currency} ·{" "}
+                          {entry.source === "manual"
+                            ? "taxa manual"
+                            : `BCE ${dateLabel(entry.rateDate)}`}
+                          {entry.carriedForward && " (transportada)"}
+                        </p>
+                      );
+                    })()}
                     {t.notes && <p className="text-xs text-muted-foreground">{t.notes}</p>}
                   </div>
 

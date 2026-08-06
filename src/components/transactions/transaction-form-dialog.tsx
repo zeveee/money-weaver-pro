@@ -16,6 +16,8 @@ import type { TransactionWriteInput } from "@/repositories/transactions";
 import { availableQuantityAt } from "@/services/position-engine";
 import { EMPTY_RATE_TABLE, rateAt, type FxRateTable } from "@/services/fx";
 import { readSettlement, withSettlement } from "@/services/settlement";
+import { convertEntry, readEntry, withEntry } from "@/services/transaction-entry";
+import { useFxTable } from "@/hooks/use-fx-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,13 +37,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatQuantity, formatUnitPrice } from "@/lib/number-format";
+import { formatDateLabel } from "@/lib/date-format";
+import { formatCurrency, formatQuantity, formatUnitPrice } from "@/lib/number-format";
 
 const toLocalInput = (iso: string) => {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
+
+/** Moedas oferecidas: a do ativo, a da carteira e as principais do BCE. */
+const COMMON_CURRENCIES = ["EUR", "USD", "GBP", "CHF", "JPY", "BRL"];
 
 function initialValues(
   assetType: AssetType,
@@ -61,14 +67,17 @@ function initialValues(
       notes: "",
     };
   }
+  // Em edição mostra-se o que o utilizador introduziu (moeda original), não o
+  // facto já convertido para a moeda nativa do ativo.
+  const entry = readEntry(tx.metadata);
   return {
     type: tx.type,
     occurredAt: toLocalInput(tx.occurredAt),
     quantity: tx.quantity ? String(tx.quantity) : "",
-    amount: String(tx.amount ?? ""),
-    currency: tx.currency || currency,
-    fees: tx.fees ? String(tx.fees) : "",
-    taxes: tx.taxes ? String(tx.taxes) : "",
+    amount: String((entry ? entry.amount : tx.amount) ?? ""),
+    currency: entry?.currency || tx.currency || currency,
+    fees: (entry ? entry.fees : tx.fees) ? String(entry ? entry.fees : tx.fees) : "",
+    taxes: (entry ? entry.taxes : tx.taxes) ? String(entry ? entry.taxes : tx.taxes) : "",
     notes: tx.notes ?? "",
   };
 }
@@ -87,6 +96,7 @@ export function TransactionFormDialog({
 }: {
   title: string;
   assetType: AssetType;
+  /** Moeda nativa do ativo — moeda em que o facto é registado. */
   currency: string;
   transaction?: Transaction;
   /** Histórico completo do ativo, para validar alienações à data. */
@@ -106,9 +116,23 @@ export function TransactionFormDialog({
   const set = (key: keyof TransactionFormValues, value: string) =>
     setValues((p) => ({ ...p, [key]: value }));
 
+  const native = (currency || "").toUpperCase();
   const reporting = (reportingCurrency ?? "").toUpperCase();
+  const entryCurrency = (values.currency || "").toUpperCase();
+  const needsConversion = !!entryCurrency && entryCurrency !== native;
+
+  // Catálogo próprio do formulário: a moeda de introdução pode não ser nenhuma
+  // das que a secção carregou.
+  const { table: ownTable } = useFxTable([native, reporting, entryCurrency]);
+  const table = ownTable.pairs.size > 0 ? ownTable : fxTable;
+
+  const frozenEntry = readEntry(transaction?.metadata);
+  const [manualRate, setManualRate] = useState("");
+
   const existingSettlement = readSettlement(transaction?.metadata, reporting);
-  const [settlementOn, setSettlementOn] = useState(!!existingSettlement);
+  const [settlementOn, setSettlementOn] = useState(
+    !!existingSettlement && (frozenEntry?.currency ?? native) !== reporting,
+  );
   const [settlementAmount, setSettlementAmount] = useState(
     existingSettlement ? String(existingSettlement.amount) : "",
   );
@@ -118,6 +142,12 @@ export function TransactionFormDialog({
   const ctx = useMemo(() => ({ unitBased }), [unitBased]);
   const withQuantity = usesQuantityFor(assetType, values.type, ctx);
   const options = getTransactionTypeOptions(assetType);
+
+  const currencyOptions = useMemo(
+    () =>
+      [...new Set([native, reporting, ...COMMON_CURRENCIES, entryCurrency].filter(Boolean))].sort(),
+    [native, reporting, entryCurrency],
+  );
 
   const changeType = (next: TransactionType) => {
     setValues((p) => ({
@@ -131,6 +161,40 @@ export function TransactionFormDialog({
   const amount = Number(values.amount);
   const fees = values.fees === "" ? 0 : Number(values.fees);
   const taxes = values.taxes === "" ? 0 : Number(values.taxes);
+
+  // ---- Conversão para a moeda nativa do ativo (congelada na gravação) ----
+  const conversion = useMemo(() => {
+    if (!values.occurredAt || !entryCurrency) return null;
+    return convertEntry(
+      table,
+      {
+        amount: Number.isFinite(amount) ? amount : 0,
+        currency: entryCurrency,
+        fees,
+        taxes,
+        occurredAt: new Date(values.occurredAt).toISOString(),
+      },
+      native,
+      { frozen: frozenEntry, manualRate: manualRate === "" ? null : Number(manualRate) },
+    );
+  }, [
+    table,
+    amount,
+    entryCurrency,
+    fees,
+    taxes,
+    values.occurredAt,
+    native,
+    frozenEntry,
+    manualRate,
+  ]);
+
+  const converted = conversion?.status === "ok" ? conversion : null;
+  const missingRate = needsConversion && conversion?.status === "missing";
+  const nativeAmount = converted ? converted.native.amount : Number.isFinite(amount) ? amount : 0;
+  const nativeFees = converted ? converted.native.fees : fees;
+  const nativeTaxes = converted ? converted.native.taxes : taxes;
+
   /** Posição disponível à data escolhida, excluindo a transação em edição. */
   const available = useMemo(() => {
     if (!values.occurredAt) return null;
@@ -144,18 +208,20 @@ export function TransactionFormDialog({
   }, [transactions, transaction?.id, assetType, values.occurredAt, ctx]);
 
   const isDisposal = profile.direction === "out";
-  const showUnitPrice = withQuantity && qty > 0 && Number.isFinite(amount) && amount > 0;
+  const showUnitPrice = withQuantity && qty > 0 && nativeAmount > 0;
 
   // ---- Liquidação efetiva (opcional) ----
-  const nativeCurrency = (values.currency || "").toUpperCase();
-  const showSettlement = !!reporting && reporting !== nativeCurrency;
-  const gross = (Number.isFinite(amount) ? amount : 0) + fees + taxes;
+  // Quando a introdução já é feita na moeda da carteira, o montante introduzido
+  // É o valor liquidado: a liquidação passa a ser automática.
+  const entryIsReporting = !!reporting && entryCurrency === reporting;
+  const showSettlement = !!reporting && reporting !== native && !entryIsReporting;
+  const gross = nativeAmount + nativeFees + nativeTaxes;
   const ecbResolution = useMemo(
     () =>
       showSettlement && values.occurredAt
-        ? rateAt(fxTable, nativeCurrency, reporting, new Date(values.occurredAt).toISOString())
+        ? rateAt(table, native, reporting, new Date(values.occurredAt).toISOString())
         : null,
-    [showSettlement, fxTable, nativeCurrency, reporting, values.occurredAt],
+    [showSettlement, table, native, reporting, values.occurredAt],
   );
   const ecbRate = ecbResolution?.status === "ok" ? ecbResolution.rate : null;
   const ecbValue = ecbRate != null && gross > 0 ? gross * ecbRate : null;
@@ -182,8 +248,18 @@ export function TransactionFormDialog({
     });
     if (!result.ok) return toast.error(result.message);
 
+    if (!converted) {
+      return toast.error(
+        `Sem taxa ${entryCurrency}/${native} para esta data. Indique uma taxa manual.`,
+      );
+    }
+
     let settlement: { amount: number; currency: string } | null = null;
-    if (showSettlement && settlementOn) {
+    if (entryIsReporting) {
+      // A introdução foi feita na moeda da carteira: é esse o valor movimentado.
+      const grossEntryAmount = (Number.isFinite(amount) ? amount : 0) + fees + taxes;
+      if (grossEntryAmount > 0) settlement = { amount: grossEntryAmount, currency: reporting };
+    } else if (showSettlement && settlementOn) {
       if (!Number.isFinite(settledNumber) || settledNumber <= 0) {
         return toast.error(`Indique o montante liquidado em ${reporting}.`);
       }
@@ -191,24 +267,23 @@ export function TransactionFormDialog({
     }
 
     const quantity = withQuantity ? qty : 0;
+    const baseMetadata = {
+      ...(transaction?.metadata ?? {}),
+      ...(option?.incomeKind ? { incomeKind: option.incomeKind } : {}),
+    };
+
     onSubmit({
       type: values.type,
       occurredAt: new Date(values.occurredAt).toISOString(),
       quantity,
       // Preço unitário é sempre derivado — nunca introduzido pelo utilizador.
-      unitPrice: withQuantity ? derivedUnitPrice(amount, quantity) : 0,
-      amount,
-      currency: values.currency,
-      fees,
-      taxes,
+      unitPrice: withQuantity ? derivedUnitPrice(converted.native.amount, quantity) : 0,
+      amount: converted.native.amount,
+      currency: native,
+      fees: converted.native.fees,
+      taxes: converted.native.taxes,
       notes: values.notes.trim() === "" ? null : values.notes.trim(),
-      metadata: withSettlement(
-        {
-          ...(transaction?.metadata ?? {}),
-          ...(option?.incomeKind ? { incomeKind: option.incomeKind } : {}),
-        },
-        settlement,
-      ),
+      metadata: withSettlement(withEntry(baseMetadata, converted.entry), settlement),
     });
   };
 
@@ -281,13 +356,20 @@ export function TransactionFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="t-currency">Moeda *</Label>
-            <Input
-              id="t-currency"
-              maxLength={3}
-              value={values.currency}
-              onChange={(e) => set("currency", e.target.value.toUpperCase())}
-            />
+            <Label htmlFor="t-currency">Moeda da introdução *</Label>
+            <Select value={entryCurrency} onValueChange={(v) => set("currency", v)}>
+              <SelectTrigger id="t-currency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {currencyOptions.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                    {c === native ? " · moeda do ativo" : c === reporting ? " · carteira" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -316,6 +398,59 @@ export function TransactionFormDialog({
           </div>
         </div>
 
+        {needsConversion && (
+          <div className="space-y-2 rounded-md border p-3">
+            <p className="text-sm font-medium">Conversão para {native}</p>
+            {converted && converted.entry ? (
+              <>
+                <p className="text-sm">
+                  {formatCurrency(Number.isFinite(amount) ? amount : 0, entryCurrency)} ={" "}
+                  <span className="font-medium">
+                    {formatCurrency(converted.native.amount, native)}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  1 {entryCurrency} = {converted.entry.rate.toPrecision(8)} {native} ·{" "}
+                  {converted.entry.source === "manual"
+                    ? "taxa manual"
+                    : `BCE ${formatDateLabel(converted.entry.rateDate)}`}
+                  {converted.entry.carriedForward && " (transportada)"}
+                  {converted.frozen && " · congelada na criação"}
+                  {(fees > 0 || taxes > 0) && " · custos convertidos à mesma taxa"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  A transação fica registada em {native}; a conversão é congelada e não é
+                  recalculada por atualizações futuras das taxas.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-destructive">
+                  Sem taxa {entryCurrency}/{native} para esta data.
+                </p>
+                <Label htmlFor="t-manual-rate" className="text-xs font-normal">
+                  Taxa manual (1 {entryCurrency} = ? {native})
+                </Label>
+                <Input
+                  id="t-manual-rate"
+                  type="number"
+                  step="any"
+                  min={0}
+                  value={manualRate}
+                  onChange={(e) => setManualRate(e.target.value)}
+                />
+              </>
+            )}
+          </div>
+        )}
+
+        {entryIsReporting && needsConversion && (
+          <p className="text-xs text-muted-foreground">
+            Introduzido na moeda da carteira: este montante é usado diretamente no reporting em{" "}
+            {reporting}, sem reconversão.
+          </p>
+        )}
+
         {showSettlement && (
           <div className="space-y-2 rounded-md border p-3">
             <div className="flex items-center gap-2">
@@ -341,7 +476,7 @@ export function TransactionFormDialog({
                 <p className="text-xs text-muted-foreground">
                   {settledRate != null ? (
                     <>
-                      Taxa efetiva: 1 {nativeCurrency} = {settledRate.toPrecision(6)} {reporting}
+                      Taxa efetiva: 1 {native} = {settledRate.toPrecision(6)} {reporting}
                       {deviation != null && (
                         <>
                           {" "}
@@ -364,20 +499,21 @@ export function TransactionFormDialog({
           </div>
         )}
 
-
         {showUnitPrice && (
           <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
             Preço unitário derivado:{" "}
             <span className="font-medium text-foreground">
-              {formatUnitPrice(derivedUnitPrice(amount, qty), values.currency)}
+              {formatUnitPrice(derivedUnitPrice(nativeAmount, qty), native)}
             </span>
-            {(fees > 0 || taxes > 0) && (
+            {(nativeFees > 0 || nativeTaxes > 0) && (
               <>
                 {" "}
                 · efetivo (com custos):{" "}
                 <span className="font-medium text-foreground">
-                  {formatUnitPrice(effectiveUnitPrice(profile.direction, amount, qty, fees, taxes))}{" "}
-                  {values.currency}
+                  {formatUnitPrice(
+                    effectiveUnitPrice(profile.direction, nativeAmount, qty, nativeFees, nativeTaxes),
+                  )}{" "}
+                  {native}
                 </span>
               </>
             )}
@@ -395,7 +531,7 @@ export function TransactionFormDialog({
         </div>
 
         <DialogFooter>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || missingRate}>
             {loading ? "A guardar…" : "Guardar"}
           </Button>
         </DialogFooter>
