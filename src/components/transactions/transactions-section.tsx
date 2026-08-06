@@ -308,11 +308,20 @@ export function TransactionsSection({
   );
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
+function SummaryTile({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string | null | false;
+}) {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-sm font-medium">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground">≈ {sub}</p>}
     </div>
   );
 }
