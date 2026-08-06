@@ -120,19 +120,27 @@ export const grossEntry = (input: Pick<EntryInput, "amount" | "fees" | "taxes">)
 /**
  * A introdução congelada continua a descrever exatamente estes valores?
  * Só então a taxa antiga pode ser reutilizada sem recalcular.
+ *
+ * A data do evento entra na comparação: editar a data invalida o snapshot e
+ * força nova procura da taxa histórica. Snapshots legados (sem `entryDate`)
+ * usam a `rateDate` gravada como proxy — sem migração de dados.
  */
 export function entryMatches(
   frozen: TransactionEntry | null | undefined,
   input: EntryInput,
 ): boolean {
   if (!frozen) return false;
+  const date = toRateDate(input.occurredAt);
+  const frozenDate = frozen.entryDate || frozen.rateDate;
   return (
+    frozenDate === date &&
     same(frozen.currency, input.currency) &&
     frozen.amount === num(input.amount) &&
     frozen.fees === num(input.fees) &&
     frozen.taxes === num(input.taxes)
   );
 }
+
 
 export interface ConvertEntryOptions {
   /** Introdução já congelada (edição): reutilizada quando continua a aplicar-se. */
