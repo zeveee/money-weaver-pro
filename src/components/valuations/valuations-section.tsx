@@ -270,7 +270,18 @@ export function ValuationsSection({
                     </td>
                     <td className="py-2 pr-3">
                       <span className="flex items-center gap-2">
-                        {money(resolveValuationValue(v, quantityAt), v.currency)}
+                        {showFx ? (
+                          <FxAmount
+                            table={fxTable}
+                            amount={resolveValuationValue(v, quantityAt)}
+                            currency={v.currency}
+                            reportingCurrency={reporting}
+                            date={v.valuationDate}
+                            inline
+                          />
+                        ) : (
+                          money(resolveValuationValue(v, quantityAt), v.currency)
+                        )}
                         <Badge variant={valuationMode(v) === "derived" ? "outline" : "secondary"}>
                           {valuationMode(v) === "derived" ? "Derivada" : "Manual"}
                         </Badge>
