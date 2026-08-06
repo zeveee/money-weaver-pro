@@ -125,11 +125,15 @@ export interface ReportedTotals {
   missingCurrencies: string[];
   /** Verdadeiro quando alguma conversão usou carry-forward da última taxa conhecida. */
   usedCarryForward: boolean;
+  /** Verdadeiro quando alguma transação usou o montante liquidado pela corretora. */
+  usedSettlement: boolean;
 }
 
 /**
  * Totais de transações já convertidos para a moeda de reporting.
  * Espelha `transactionTotals` (moeda nativa) sem o substituir.
+ *
+ * Prioridade por evento: montante liquidado (taxa efetiva) → taxa BCE à data.
  */
 export function reportedTransactionTotals(
   table: FxRateTable,
@@ -141,19 +145,29 @@ export function reportedTransactionTotals(
   let income = 0;
   let costs = 0;
   let usedCarryForward = false;
+  let usedSettlement = false;
   const missing = new Set<string>();
   const to = (reportingCurrency || "").toUpperCase();
 
   for (const t of transactions) {
     const date = toRateDate(t.occurredAt);
-    const resolution = rateAt(table, t.currency, to, date);
-    if (resolution.status === "missing") {
-      missing.add((t.currency || "").toUpperCase());
-      continue;
-    }
-    if (resolution.carriedForward) usedCarryForward = true;
+    const settlement = readSettlement(t.metadata, to);
+    const settled = settlement ? effectiveRate(settlement.amount, grossNative(t)) : null;
 
-    const fx = resolution.rate;
+    let fx: number;
+    if (settled != null) {
+      fx = settled;
+      usedSettlement = true;
+    } else {
+      const resolution = rateAt(table, t.currency, to, date);
+      if (resolution.status === "missing") {
+        missing.add((t.currency || "").toUpperCase());
+        continue;
+      }
+      if (resolution.carriedForward) usedCarryForward = true;
+      fx = resolution.rate;
+    }
+
     const amount = (Number(t.amount) || 0) * fx;
     costs += ((Number(t.fees) || 0) + (Number(t.taxes) || 0)) * fx;
 
