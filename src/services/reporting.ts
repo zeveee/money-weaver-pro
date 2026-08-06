@@ -24,6 +24,7 @@ import {
 } from "@/services/fx";
 import { resolveValuationValue, type QuantityAt } from "@/services/valuation-metrics";
 import { effectiveRate, grossNative, readSettlement } from "@/services/settlement";
+import { entryReportedGross } from "@/services/transaction-entry";
 
 /** Origem da taxa aplicada: referência do BCE ou liquidação efetiva da corretora. */
 export type ReportedRateSource = "ecb" | "settlement";
@@ -159,8 +160,10 @@ export function reportedTransactionTotals(
 
   for (const t of transactions) {
     const date = toRateDate(t.occurredAt);
-    const settlement = readSettlement(t.metadata, to);
-    const settled = settlement ? effectiveRate(settlement.amount, grossNative(t)) : null;
+    const declared = readSettlement(t.metadata, to);
+    const settledAmount = declared?.amount ?? entryReportedGross(t.metadata, to);
+    const settled =
+      settledAmount == null ? null : effectiveRate(settledAmount, grossNative(t));
 
     let fx: number;
     if (settled != null) {
