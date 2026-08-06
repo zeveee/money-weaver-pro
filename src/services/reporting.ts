@@ -64,7 +64,15 @@ export function reportTransaction(
   const native = { amount: gross, currency: transaction.currency };
   const to = (reportingCurrency || "").toUpperCase();
 
-  const settlement = readSettlement(transaction.metadata, to);
+  // Prioridade: liquidação declarada → montante introduzido na moeda da
+  // carteira → taxa BCE à data. Nunca reconverter o que já veio na moeda certa.
+  const declared = readSettlement(transaction.metadata, to);
+  const settlement =
+    declared ??
+    (() => {
+      const amountInReporting = entryReportedGross(transaction.metadata, to);
+      return amountInReporting == null ? null : { amount: amountInReporting, currency: to };
+    })();
   if (settlement) {
     const rate = effectiveRate(settlement.amount, gross);
     if (rate != null) {
