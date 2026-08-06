@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as ApiPublicFxSyncRouteImport } from './routes/api/public/fx-sync'
 import { Route as AuthenticatedAppPortfoliosRouteImport } from './routes/_authenticated/app.portfolios'
 import { Route as AuthenticatedAppPortfolioPortfolioIdRouteImport } from './routes/_authenticated/app.portfolio.$portfolioId'
 import { Route as AuthenticatedAppGroupGroupIdRouteImport } from './routes/_authenticated/app.group.$groupId'
@@ -36,6 +37,11 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/app/',
   path: '/app/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicFxSyncRoute = ApiPublicFxSyncRouteImport.update({
+  id: '/api/public/fx-sync',
+  path: '/api/public/fx-sync',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppPortfoliosRoute =
   AuthenticatedAppPortfoliosRouteImport.update({
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app/portfolios': typeof AuthenticatedAppPortfoliosRoute
+  '/api/public/fx-sync': typeof ApiPublicFxSyncRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/asset/$assetId': typeof AuthenticatedAppAssetAssetIdRoute
   '/app/group/$groupId': typeof AuthenticatedAppGroupGroupIdRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app/portfolios': typeof AuthenticatedAppPortfoliosRoute
+  '/api/public/fx-sync': typeof ApiPublicFxSyncRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/asset/$assetId': typeof AuthenticatedAppAssetAssetIdRoute
   '/app/group/$groupId': typeof AuthenticatedAppGroupGroupIdRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/app/portfolios': typeof AuthenticatedAppPortfoliosRoute
+  '/api/public/fx-sync': typeof ApiPublicFxSyncRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/asset/$assetId': typeof AuthenticatedAppAssetAssetIdRoute
   '/_authenticated/app/group/$groupId': typeof AuthenticatedAppGroupGroupIdRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/app/portfolios'
+    | '/api/public/fx-sync'
     | '/app/'
     | '/app/asset/$assetId'
     | '/app/group/$groupId'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/app/portfolios'
+    | '/api/public/fx-sync'
     | '/app'
     | '/app/asset/$assetId'
     | '/app/group/$groupId'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/app/portfolios'
+    | '/api/public/fx-sync'
     | '/_authenticated/app/'
     | '/_authenticated/app/asset/$assetId'
     | '/_authenticated/app/group/$groupId'
@@ -126,6 +138,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicFxSyncRoute: typeof ApiPublicFxSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -157,6 +170,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/fx-sync': {
+      id: '/api/public/fx-sync'
+      path: '/api/public/fx-sync'
+      fullPath: '/api/public/fx-sync'
+      preLoaderRoute: typeof ApiPublicFxSyncRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app/portfolios': {
       id: '/_authenticated/app/portfolios'
@@ -213,17 +233,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicFxSyncRoute: ApiPublicFxSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

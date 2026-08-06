@@ -354,13 +354,18 @@ export interface PortfolioGroup {
   updatedAt: ISODateTime;
 }
 
-/** Taxa de câmbio entre duas moedas numa data (ex.: EUR/USD). */
+/**
+ * Taxa de câmbio entre duas moedas numa data (ex.: EUR/USD).
+ * Fator multiplicativo: `montante(base) × exchangeRate = montante(quote)`.
+ */
 export interface ExchangeRate {
   id: UUID;
   date: ISODate;
   baseCurrency: CurrencyCode;
   quoteCurrency: CurrencyCode;
   exchangeRate: number;
+  /** Origem da observação: "ecb", "manual", … */
+  source: string;
 }
 
 // ---------- Agregados (views compostas de leitura) ----------

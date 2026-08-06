@@ -144,3 +144,33 @@ Regra: **arredondar apenas na apresentação**.
 
 `assets.quantity`, `assets.average_cost` e `assets.current_value` continuam a
 ser apenas cache: o valor exibido vem sempre do Position Engine.
+
+## Multi-currency
+
+Dois planos de cálculo, nunca misturados:
+
+- **Moeda nativa** — Position Engine, custo médio, quantidade, NAV e
+  mais-valias por ativo. Transactions e Valuations mantêm sempre a sua moeda
+  original; nada é convertido neste plano.
+- **Moeda de reporting** — `portfolios.base_currency`. Conversão **evento a
+  evento, à data do evento** (`src/services/reporting.ts`), nunca conversão do
+  somatório.
+
+Componentes:
+
+- `src/services/fx.ts` (puro) — `buildRateTable`, `rateAt`, `convert`.
+  Moeda pivô **EUR**: qualquer par A→B resolve-se direto, invertido ou
+  triangulado via EUR. Carry-forward da última taxa com data <= data do
+  evento; sem taxa anterior devolve `missing`, nunca 1 silencioso.
+- `src/repositories/exchange-rates.ts` — leitura do catálogo global
+  `exchange_rates` (única por `base, quote, date`, com `source`).
+  Leitura pública; escrita restrita a `admin` (`has_role`) e `service_role`.
+- `src/services/reporting.ts` — `reportTransaction`, `reportValuation`,
+  `reportedTransactionTotals` e `attributeFxPerformance`, que decompõe o
+  ganho em efeito do ativo, efeito cambial e termo cruzado.
+- `src/routes/api/public/fx-sync.ts` — sincronização diária das taxas do BCE
+  (Frankfurter) contra EUR, com upsert privilegiado. Agendar por `pg_cron`
+  após publicação; suporta backfill via `?from=&to=`.
+
+Excepção deliberada: o **valor atual** converte-se à taxa mais recente
+disponível; o histórico usa sempre a taxa da data do evento.

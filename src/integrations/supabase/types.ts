@@ -427,6 +427,7 @@ export type Database = {
           exchange_rate: number
           id: string
           quote_currency: string
+          source: string
         }
         Insert: {
           base_currency: string
@@ -435,6 +436,7 @@ export type Database = {
           exchange_rate: number
           id?: string
           quote_currency: string
+          source?: string
         }
         Update: {
           base_currency?: string
@@ -443,6 +445,7 @@ export type Database = {
           exchange_rate?: number
           id?: string
           quote_currency?: string
+          source?: string
         }
         Relationships: []
       }
