@@ -14,24 +14,37 @@ export interface ExchangeRateQuery {
   since?: string;
 }
 
+const PAGE_SIZE = 1000;
+
 export async function listExchangeRates(
   query: ExchangeRateQuery = {},
 ): Promise<ExchangeRate[]> {
-  let q = supabase.from("exchange_rates").select("*").order("date", { ascending: false });
-
-  if (query.since) q = q.gte("date", query.since);
-
   const currencies = (query.currencies ?? [])
     .map((c) => c.toUpperCase())
     .filter((c, i, arr) => c && arr.indexOf(c) === i);
-  if (currencies.length > 0) {
-    const list = `(${currencies.join(",")})`;
-    q = q.or(`base_currency.in.${list},quote_currency.in.${list}`);
-  }
 
-  const { data, error } = await q;
-  if (error) throw error;
-  return (data ?? []).map(toExchangeRate);
+  const rows: ExchangeRate[] = [];
+  // O PostgREST limita cada pedido a 1000 linhas; o catálogo histórico é maior,
+  // pelo que paginamos até esgotar o resultado.
+  for (let page = 0; ; page += 1) {
+    let q = supabase
+      .from("exchange_rates")
+      .select("*")
+      .order("date", { ascending: false })
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
+    if (query.since) q = q.gte("date", query.since);
+    if (currencies.length > 0) {
+      const list = `(${currencies.join(",")})`;
+      q = q.or(`base_currency.in.${list},quote_currency.in.${list}`);
+    }
+
+    const { data, error } = await q;
+    if (error) throw error;
+    rows.push(...(data ?? []).map(toExchangeRate));
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+  return rows;
 }
 
 export interface ExchangeRateWriteInput {

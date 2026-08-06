@@ -46,41 +46,75 @@ async function fetchEcbRates(params: {
     : ((json as { rates: RatesByDate }).rates ?? {});
 }
 
+const toRows = (byDate: RatesByDate) =>
+  Object.entries(byDate).flatMap(([date, rates]) =>
+    Object.entries(rates)
+      .filter(([, value]) => Number.isFinite(value) && value > 0)
+      .map(([quote, value]) => ({
+        date,
+        base_currency: PIVOT,
+        quote_currency: quote.toUpperCase(),
+        exchange_rate: value,
+        source: "ecb",
+      })),
+  );
+
+/** Parte um intervalo em blocos anuais — evita timeouts no backfill inicial. */
+function yearChunks(from: string, to: string): { from: string; to: string }[] {
+  const chunks: { from: string; to: string }[] = [];
+  let cursor = from;
+  while (cursor <= to) {
+    const year = Number(cursor.slice(0, 4));
+    const end = `${year}-12-31`;
+    chunks.push({ from: cursor, to: end < to ? end : to });
+    cursor = `${year + 1}-01-01`;
+  }
+  return chunks;
+}
+
 async function sync(request: Request): Promise<Response> {
   const url = new URL(request.url);
+  const symbols = url.searchParams.get("symbols");
+  const from = url.searchParams.get("from");
+  const to = url.searchParams.get("to") ?? new Date().toISOString().slice(0, 10);
+
   try {
-    const byDate = await fetchEcbRates({
-      date: url.searchParams.get("date"),
-      from: url.searchParams.get("from"),
-      to: url.searchParams.get("to"),
-      symbols: url.searchParams.get("symbols"),
-    });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const rows = Object.entries(byDate).flatMap(([date, rates]) =>
-      Object.entries(rates)
-        .filter(([, value]) => Number.isFinite(value) && value > 0)
-        .map(([quote, value]) => ({
-          date,
-          base_currency: PIVOT,
-          quote_currency: quote.toUpperCase(),
-          exchange_rate: value,
-          source: "ecb",
-        })),
-    );
+    const upsert = async (rows: ReturnType<typeof toRows>) => {
+      if (rows.length === 0) return 0;
+      // A API do PostgREST aceita lotes grandes, mas mantemos blocos de 5000.
+      for (let i = 0; i < rows.length; i += 5000) {
+        const { error } = await supabaseAdmin
+          .from("exchange_rates")
+          .upsert(rows.slice(i, i + 5000), {
+            onConflict: "base_currency,quote_currency,date",
+          });
+        if (error) throw error;
+      }
+      return rows.length;
+    };
 
-    if (rows.length === 0) {
-      return Response.json({ ok: true, upserted: 0, dates: [] });
+    if (from) {
+      const chunks = yearChunks(from, to);
+      const perChunk: { from: string; to: string; upserted: number; dates: number }[] = [];
+      let total = 0;
+      for (const chunk of chunks) {
+        const byDate = await fetchEcbRates({ from: chunk.from, to: chunk.to, symbols });
+        const rows = toRows(byDate);
+        total += await upsert(rows);
+        perChunk.push({ ...chunk, upserted: rows.length, dates: Object.keys(byDate).length });
+      }
+      return Response.json({ ok: true, mode: "backfill", from, to, upserted: total, chunks: perChunk });
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("exchange_rates")
-      .upsert(rows, { onConflict: "base_currency,quote_currency,date" });
-    if (error) throw error;
-
+    const byDate = await fetchEcbRates({ date: url.searchParams.get("date"), symbols });
+    const rows = toRows(byDate);
+    const upserted = await upsert(rows);
     return Response.json({
       ok: true,
-      upserted: rows.length,
+      mode: "latest",
+      upserted,
       dates: Object.keys(byDate).sort(),
     });
   } catch (e) {

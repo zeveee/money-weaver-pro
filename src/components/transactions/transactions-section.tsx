@@ -36,6 +36,9 @@ import {
 
 import { formatDateLabel } from "@/lib/date-format";
 import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
+import { useFxTable } from "@/hooks/use-fx-table";
+import { reportedTransactionTotals } from "@/services/reporting";
+import { FxAmount, FxFootnote } from "@/components/fx/fx-amount";
 
 const dateLabel = (iso: string) => formatDateLabel(iso);
 
@@ -47,7 +50,13 @@ const INCOME_KIND_LABEL: Record<string, string> = {
   rent: "Rendas",
 };
 
-export function TransactionsSection({ asset }: { asset: Asset }) {
+export function TransactionsSection({
+  asset,
+  reportingCurrency,
+}: {
+  asset: Asset;
+  reportingCurrency?: string | null;
+}) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -95,6 +104,21 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
     [asset.type, transactions],
   );
 
+  // Camada de reporting: só entra em cena quando a moeda do ativo difere da
+  // moeda base da carteira. O plano nativo acima mantém-se intocado.
+  const reporting = (reportingCurrency ?? "").toUpperCase();
+  const showFx = !!reporting && reporting !== asset.currency.toUpperCase();
+  const { table: fxTable, isEmpty: fxEmpty } = useFxTable([asset.currency], {
+    enabled: showFx,
+  });
+  const reported = useMemo(
+    () => (showFx ? reportedTransactionTotals(fxTable, transactions, reporting) : null),
+    [showFx, fxTable, transactions, reporting],
+  );
+
+  const sub = (value: number) =>
+    reported ? money(value, reported.currency) : undefined;
+
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
@@ -121,9 +145,18 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
           <SummaryTile
             label="Capital investido"
             value={money(totals.investedCapital, asset.currency)}
+            sub={reported && sub(reported.investedCapital)}
           />
-          <SummaryTile label="Total de entradas" value={money(totals.inflows, asset.currency)} />
-          <SummaryTile label="Total de saídas" value={money(totals.outflows, asset.currency)} />
+          <SummaryTile
+            label="Total de entradas"
+            value={money(totals.inflows, asset.currency)}
+            sub={reported && sub(reported.inflows)}
+          />
+          <SummaryTile
+            label="Total de saídas"
+            value={money(totals.outflows, asset.currency)}
+            sub={reported && sub(reported.outflows)}
+          />
           {position.tracksQuantity && (
             <>
               <SummaryTile
@@ -136,13 +169,38 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
               />
             </>
           )}
-          <SummaryTile label="Rendimentos" value={money(totals.income, asset.currency)} />
-          <SummaryTile label="Custos" value={money(totals.costs, asset.currency)} />
+          <SummaryTile
+            label="Rendimentos"
+            value={money(totals.income, asset.currency)}
+            sub={reported && sub(reported.income)}
+          />
+          <SummaryTile
+            label="Custos"
+            value={money(totals.costs, asset.currency)}
+            sub={reported && sub(reported.costs)}
+          />
           <SummaryTile
             label="Mais-valia realizada"
             value={money(position.realizedGain, asset.currency)}
           />
         </div>
+
+        {showFx && (
+          <>
+            <FxFootnote
+              currency={asset.currency}
+              reportingCurrency={reporting}
+              isEmpty={fxEmpty}
+            />
+            {reported && reported.missingCurrencies.length > 0 && (
+              <p className="text-xs text-destructive">
+                Totais parciais: sem taxa histórica para{" "}
+                {reported.missingCurrencies.join(", ")}.
+              </p>
+            )}
+          </>
+        )}
+
 
         {Object.keys(totals.incomeByKind).length > 0 && (
           <p className="text-xs text-muted-foreground">
@@ -183,7 +241,18 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
                       </span>
                     </div>
                     <p className="text-sm">
-                      {money(t.amount, t.currency)}
+                      {showFx ? (
+                        <FxAmount
+                          table={fxTable}
+                          amount={t.amount}
+                          currency={t.currency}
+                          reportingCurrency={reporting}
+                          date={t.occurredAt}
+                          inline
+                        />
+                      ) : (
+                        money(t.amount, t.currency)
+                      )}
                       {withQty && t.quantity > 0 && (
                         <span className="text-muted-foreground">
                           {" "}
@@ -253,11 +322,20 @@ export function TransactionsSection({ asset }: { asset: Asset }) {
   );
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
+function SummaryTile({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string | null | false;
+}) {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-sm font-medium">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground">≈ {sub}</p>}
     </div>
   );
 }

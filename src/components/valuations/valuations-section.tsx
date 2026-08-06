@@ -39,9 +39,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
+import { useFxTable } from "@/hooks/use-fx-table";
+import { FxAmount, FxFootnote } from "@/components/fx/fx-amount";
+import { reportCurrentValue, reportedTransactionTotals } from "@/services/reporting";
 
 
-export function ValuationsSection({ asset }: { asset: Asset }) {
+export function ValuationsSection({
+  asset,
+  reportingCurrency,
+}: {
+  asset: Asset;
+  reportingCurrency?: string | null;
+}) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<AssetValuation | null>(null);
@@ -72,6 +81,32 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
   const gain = unrealizedGain(current, refPosition.costBasis);
   const isFuture = !!latest && latest.valuationDate > todayISODate();
   const asOfLabel = latest ? formatDateLabel(latest.valuationDate) : null;
+
+  // ---- Plano de reporting (moeda base da carteira) ----------------------
+  const reporting = (reportingCurrency ?? "").toUpperCase();
+  const showFx = !!reporting && reporting !== asset.currency.toUpperCase();
+  const { table: fxTable, isEmpty: fxEmpty } = useFxTable([asset.currency], { enabled: showFx });
+
+  // Valor atual: taxa mais recente disponível (foto de "quanto vale agora").
+  const currentReported = showFx
+    ? reportCurrentValue(fxTable, { amount: current.value, currency: current.currency }, reporting)
+    : null;
+  // Custo em moeda de reporting: convertido evento a evento até à data de
+  // referência — nunca o total nativo convertido a uma única taxa.
+  const costReported = showFx
+    ? reportedTransactionTotals(
+        fxTable,
+        latest
+          ? transactions.filter((t) => t.occurredAt.slice(0, 10) <= latest.valuationDate)
+          : transactions,
+        reporting,
+      )
+    : null;
+  const gainReported =
+    currentReported?.reported && costReported
+      ? currentReported.reported.amount - costReported.investedCapital
+      : null;
+
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["valuations", asset.id] });
@@ -135,6 +170,13 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
           <div>
             <p className="text-xs text-muted-foreground">Valor de mercado</p>
             <p className="text-lg font-semibold">{money(current.value, current.currency)}</p>
+            {currentReported && (
+              <p className="text-xs text-muted-foreground">
+                {currentReported.reported
+                  ? `≈ ${money(currentReported.reported.amount, currentReported.reported.currency)} · taxa de ${formatDateLabel(currentReported.date)}`
+                  : `sem taxa ${current.currency}/${reporting}`}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               {current.source === "valuation"
                 ? `Valorização de ${asOfLabel}${isFuture ? " (data futura)" : ""}`
@@ -157,6 +199,12 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
               Custo da posição{asOfLabel ? ` a ${asOfLabel}` : ""}
             </p>
             <p className="text-lg font-semibold">{money(refPosition.costBasis, asset.currency)}</p>
+            {costReported && (
+              <p className="text-xs text-muted-foreground">
+                ≈ {money(costReported.investedCapital, costReported.currency)} (convertido evento a
+                evento)
+              </p>
+            )}
             {refPosition.tracksQuantity && (
               <p className="text-xs text-muted-foreground">
                 {formatQuantity(refPosition.quantity)} un. · custo médio{" "}
@@ -169,6 +217,11 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             <p className="text-lg font-semibold">
               {gain == null ? "—" : money(gain, current.currency)}
             </p>
+            {gainReported != null && (
+              <p className="text-xs text-muted-foreground">
+                ≈ {money(gainReported, reporting)} (inclui efeito cambial)
+              </p>
+            )}
             {latest?.unitPrice != null && (
               <p className="text-xs text-muted-foreground">
                 {spec.label}: {formatUnitPrice(latest.unitPrice, latest.currency)}
@@ -176,6 +229,9 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
             )}
           </div>
         </div>
+        {showFx && (
+          <FxFootnote currency={asset.currency} reportingCurrency={reporting} isEmpty={fxEmpty} />
+        )}
         {asOfLabel && (
           <p className="text-xs text-muted-foreground">
             Métricas calculadas com a posição reconstruída a {asOfLabel}, não com a posição atual.
@@ -214,7 +270,18 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
                     </td>
                     <td className="py-2 pr-3">
                       <span className="flex items-center gap-2">
-                        {money(resolveValuationValue(v, quantityAt), v.currency)}
+                        {showFx ? (
+                          <FxAmount
+                            table={fxTable}
+                            amount={resolveValuationValue(v, quantityAt)}
+                            currency={v.currency}
+                            reportingCurrency={reporting}
+                            date={v.valuationDate}
+                            inline
+                          />
+                        ) : (
+                          money(resolveValuationValue(v, quantityAt), v.currency)
+                        )}
                         <Badge variant={valuationMode(v) === "derived" ? "outline" : "secondary"}>
                           {valuationMode(v) === "derived" ? "Derivada" : "Manual"}
                         </Badge>
