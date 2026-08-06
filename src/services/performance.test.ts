@@ -53,7 +53,6 @@ const valuation = (date: string, unitPrice: number, currency = "USD"): AssetValu
   currency,
   source: "test",
   isManual: false,
-  createdAt: `${date}T00:00:00.000Z`,
 });
 
 const buys = [
