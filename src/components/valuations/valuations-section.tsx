@@ -170,6 +170,13 @@ export function ValuationsSection({
           <div>
             <p className="text-xs text-muted-foreground">Valor de mercado</p>
             <p className="text-lg font-semibold">{money(current.value, current.currency)}</p>
+            {currentReported && (
+              <p className="text-xs text-muted-foreground">
+                {currentReported.reported
+                  ? `≈ ${money(currentReported.reported.amount, currentReported.reported.currency)} · taxa de ${formatDateLabel(currentReported.date)}`
+                  : `sem taxa ${current.currency}/${reporting}`}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               {current.source === "valuation"
                 ? `Valorização de ${asOfLabel}${isFuture ? " (data futura)" : ""}`
@@ -192,6 +199,12 @@ export function ValuationsSection({
               Custo da posição{asOfLabel ? ` a ${asOfLabel}` : ""}
             </p>
             <p className="text-lg font-semibold">{money(refPosition.costBasis, asset.currency)}</p>
+            {costReported && (
+              <p className="text-xs text-muted-foreground">
+                ≈ {money(costReported.investedCapital, costReported.currency)} (convertido evento a
+                evento)
+              </p>
+            )}
             {refPosition.tracksQuantity && (
               <p className="text-xs text-muted-foreground">
                 {formatQuantity(refPosition.quantity)} un. · custo médio{" "}
@@ -204,6 +217,11 @@ export function ValuationsSection({
             <p className="text-lg font-semibold">
               {gain == null ? "—" : money(gain, current.currency)}
             </p>
+            {gainReported != null && (
+              <p className="text-xs text-muted-foreground">
+                ≈ {money(gainReported, reporting)} (inclui efeito cambial)
+              </p>
+            )}
             {latest?.unitPrice != null && (
               <p className="text-xs text-muted-foreground">
                 {spec.label}: {formatUnitPrice(latest.unitPrice, latest.currency)}
@@ -211,6 +229,9 @@ export function ValuationsSection({
             )}
           </div>
         </div>
+        {showFx && (
+          <FxFootnote currency={asset.currency} reportingCurrency={reporting} isEmpty={fxEmpty} />
+        )}
         {asOfLabel && (
           <p className="text-xs text-muted-foreground">
             Métricas calculadas com a posição reconstruída a {asOfLabel}, não com a posição atual.
