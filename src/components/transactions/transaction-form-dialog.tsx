@@ -316,6 +316,55 @@ export function TransactionFormDialog({
           </div>
         </div>
 
+        {showSettlement && (
+          <div className="space-y-2 rounded-md border p-3">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="t-settlement"
+                checked={settlementOn}
+                onCheckedChange={(v) => toggleSettlement(v === true)}
+              />
+              <Label htmlFor="t-settlement" className="text-sm font-normal">
+                Conheço o montante liquidado em {reporting}
+              </Label>
+            </div>
+            {settlementOn ? (
+              <>
+                <Input
+                  type="number"
+                  step="any"
+                  min={0}
+                  value={settlementAmount}
+                  onChange={(e) => setSettlementAmount(e.target.value)}
+                  placeholder={ecbValue != null ? ecbValue.toFixed(2) : ""}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {settledRate != null ? (
+                    <>
+                      Taxa efetiva: 1 {nativeCurrency} = {settledRate.toPrecision(6)} {reporting}
+                      {deviation != null && (
+                        <>
+                          {" "}
+                          · {deviation >= 0 ? "+" : ""}
+                          {deviation.toFixed(2)}% vs BCE
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    `Montante realmente debitado/creditado pela corretora, em ${reporting}.`
+                  )}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Por defeito converte-se à taxa do BCE da data
+                {ecbValue != null && <> (≈ {ecbValue.toFixed(2)} {reporting})</>}.
+              </p>
+            )}
+          </div>
+        )}
+
+
         {showUnitPrice && (
           <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
             Preço unitário derivado:{" "}
