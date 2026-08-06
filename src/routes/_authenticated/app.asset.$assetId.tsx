@@ -111,7 +111,7 @@ function AssetDetailPage() {
         </CardContent>
       </Card>
 
-      <TransactionsSection asset={asset} />
+      <TransactionsSection asset={asset} reportingCurrency={portfolio?.baseCurrency} />
 
       <RecurringSection asset={asset} />
 
@@ -122,7 +122,8 @@ function AssetDetailPage() {
       )}
 
       {profile.supportsValuations ? (
-        <ValuationsSection asset={asset} />
+        <ValuationsSection asset={asset} reportingCurrency={portfolio?.baseCurrency} />
+
       ) : (
         <Card>
           <CardHeader><CardTitle className="text-base">Valorações</CardTitle></CardHeader>
