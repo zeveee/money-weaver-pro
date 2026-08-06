@@ -111,6 +111,8 @@ function AssetDetailPage() {
         </CardContent>
       </Card>
 
+      <PerformanceSection asset={asset} reportingCurrency={portfolio?.baseCurrency} />
+
       <TransactionsSection asset={asset} reportingCurrency={portfolio?.baseCurrency} />
 
       <RecurringSection asset={asset} />
