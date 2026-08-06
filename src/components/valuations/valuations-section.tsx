@@ -39,9 +39,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { formatCurrency as money, formatQuantity, formatUnitPrice } from "@/lib/number-format";
+import { useFxTable } from "@/hooks/use-fx-table";
+import { FxAmount, FxFootnote } from "@/components/fx/fx-amount";
+import { reportCurrentValue, reportedTransactionTotals } from "@/services/reporting";
 
 
-export function ValuationsSection({ asset }: { asset: Asset }) {
+export function ValuationsSection({
+  asset,
+  reportingCurrency,
+}: {
+  asset: Asset;
+  reportingCurrency?: string | null;
+}) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<AssetValuation | null>(null);
@@ -72,6 +81,32 @@ export function ValuationsSection({ asset }: { asset: Asset }) {
   const gain = unrealizedGain(current, refPosition.costBasis);
   const isFuture = !!latest && latest.valuationDate > todayISODate();
   const asOfLabel = latest ? formatDateLabel(latest.valuationDate) : null;
+
+  // ---- Plano de reporting (moeda base da carteira) ----------------------
+  const reporting = (reportingCurrency ?? "").toUpperCase();
+  const showFx = !!reporting && reporting !== asset.currency.toUpperCase();
+  const { table: fxTable, isEmpty: fxEmpty } = useFxTable([asset.currency], { enabled: showFx });
+
+  // Valor atual: taxa mais recente disponível (foto de "quanto vale agora").
+  const currentReported = showFx
+    ? reportCurrentValue(fxTable, { amount: current.value, currency: current.currency }, reporting)
+    : null;
+  // Custo em moeda de reporting: convertido evento a evento até à data de
+  // referência — nunca o total nativo convertido a uma única taxa.
+  const costReported = showFx
+    ? reportedTransactionTotals(
+        fxTable,
+        latest
+          ? transactions.filter((t) => t.occurredAt.slice(0, 10) <= latest.valuationDate)
+          : transactions,
+        reporting,
+      )
+    : null;
+  const gainReported =
+    currentReported?.reported && costReported
+      ? currentReported.reported.amount - costReported.investedCapital
+      : null;
+
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["valuations", asset.id] });
