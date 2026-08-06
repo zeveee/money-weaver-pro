@@ -99,4 +99,4 @@ Arquitetura recomendada (implementação posterior):
 
 - Moeda pivô: EUR (decidido), alinhado com a futura API do BCE.
 - Valor atual: taxa mais recente disponível (decidido); o histórico continua a usar a taxa da data do evento.
-- Comportamento quando falta taxa: bloquear o agregado com aviso (recomendado) ou aproximar com a taxa mais próxima anterior sem avisar.
+- Falta de taxa: carry-forward da última taxa conhecida com data <= data do evento (decidido); só quando não existe nenhuma taxa anterior é que o agregado fica em falta com aviso.
