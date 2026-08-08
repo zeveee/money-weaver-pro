@@ -19,6 +19,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ChevronRight } from "lucide-react";
+import { PortfolioPerformanceSummary } from "@/components/performance/portfolio-performance-summary";
 
 export const Route = createFileRoute("/_authenticated/app/portfolio/$portfolioId")({
   component: PortfolioDetailPage,
@@ -101,6 +102,12 @@ function PortfolioDetailPage() {
           <p className="mt-2 text-sm text-muted-foreground">{portfolio.description}</p>
         )}
       </div>
+
+      <PortfolioPerformanceSummary
+        assets={assets}
+        baseCurrency={portfolio.baseCurrency}
+        loadingAssets={loadingAssets}
+      />
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
