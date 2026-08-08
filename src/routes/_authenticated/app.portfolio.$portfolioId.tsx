@@ -19,6 +19,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ChevronRight } from "lucide-react";
+import { PortfolioPerformanceSummary } from "@/components/performance/portfolio-performance-summary";
 
 export const Route = createFileRoute("/_authenticated/app/portfolio/$portfolioId")({
   component: PortfolioDetailPage,
