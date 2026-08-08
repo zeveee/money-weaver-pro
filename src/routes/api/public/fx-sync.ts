@@ -72,8 +72,28 @@ function yearChunks(from: string, to: string): { from: string; to: string }[] {
   return chunks;
 }
 
+/** Comparação em tempo constante — evita fuga de informação por timing. */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 async function sync(request: Request): Promise<Response> {
   const url = new URL(request.url);
+
+  // Guard: segredo partilhado obrigatório, antes de qualquer chamada externa ou escrita.
+  const expected = process.env["FX_SYNC_SECRET"];
+  if (!expected) {
+    return Response.json({ ok: false, error: "FX_SYNC_SECRET not configured" }, { status: 503 });
+  }
+  const provided =
+    request.headers.get("x-fx-sync-secret") ?? url.searchParams.get("secret") ?? "";
+  if (!safeEqual(provided, expected)) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const symbols = url.searchParams.get("symbols");
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to") ?? new Date().toISOString().slice(0, 10);
