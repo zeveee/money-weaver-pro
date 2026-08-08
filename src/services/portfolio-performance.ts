@@ -130,10 +130,6 @@ export function portfolioPerformance(input: PortfolioPerformanceInput): Portfoli
       out.assetsWithoutValuation += 1;
     }
 
-    if (perf.valueSource !== "valuation" && a.transactions.length > 0) {
-      // já contabilizado acima quando unrealizedGain é null
-    }
-
     for (const c of perf.missingCurrencies) missing.add(c);
     out.usedCarryForward = out.usedCarryForward || perf.usedCarryForward;
     out.usedSettlement = out.usedSettlement || perf.usedSettlement;
