@@ -103,6 +103,12 @@ function PortfolioDetailPage() {
         )}
       </div>
 
+      <PortfolioPerformanceSummary
+        assets={assets}
+        baseCurrency={portfolio.baseCurrency}
+        loadingAssets={loadingAssets}
+      />
+
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">Ativos</h2>
