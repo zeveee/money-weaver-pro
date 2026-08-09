@@ -160,8 +160,7 @@ export interface AssetXirrResult {
   hasTerminalValue: boolean;
 }
 
-const cashFlowForTransaction = (t: Transaction): CashFlow | null => {
-  const direction = TRANSACTION_PROFILES[t.type]?.direction;
+const cashFlowForTransaction = (t: Transaction): CashFlow | null => {  const direction = TRANSACTION_PROFILES[t.type]?.direction;
   const amount = Number(t.amount) || 0;
   const costs = (Number(t.fees) || 0) + (Number(t.taxes) || 0);
   const date = t.occurredAt.slice(0, 10);
@@ -210,7 +209,13 @@ export function assetXirr(input: AssetXirrInput): AssetXirrResult {
   const position = buildPosition(assetType, inWindow, { ...options, asOf });
   let hasTerminalValue = true;
 
-  if (position.quantity > 0) {
+  // "Posição ainda aberta" tem de valer tanto para ativos com unidades
+  // (quantity > 0) como para ativos valorizados por valor absoluto do
+  // contrato, onde quantity nunca é preenchida por desenho — nesse caso
+  // costBasis > 0 é o sinal de que ainda há capital por recuperar.
+  const stillOpen = position.quantity > 0 || position.costBasis > 1e-9;
+
+  if (stillOpen) {
     const reference = latestValuation(valuations, asOf);
     if (!reference) {
       hasTerminalValue = false;

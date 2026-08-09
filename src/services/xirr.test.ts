@@ -147,6 +147,19 @@ const valuation = (date: string, unitPrice: number, currency = "EUR"): AssetValu
   isManual: false,
 });
 
+/** Valorização manual (valor absoluto do contrato), como um seguro de
+ *  capitalização sem tracking por unidades — `unitPrice: null`. */
+const manualValuation = (date: string, totalValue: number, currency = "EUR"): AssetValuation => ({
+  id: `v-${date}`,
+  assetId: "a",
+  valuationDate: date,
+  unitPrice: null,
+  totalValue,
+  currency,
+  source: "test",
+  isManual: true,
+});
+
 describe("XIRR :: assetXirr", () => {
   it("compra única + valorização final exatamente 1 ano depois: replica o caso analítico simples", () => {
     const r = assetXirr({
@@ -305,6 +318,33 @@ describe("XIRR :: assetXirr", () => {
     });
     expect(r.hasTerminalValue).toBe(true);
     expect(r.cashFlows.at(-1)).toEqual({ date: "2026-08-06", amount: 157.5 });
+    expect(r.xirr).not.toBeNull();
+    expect(npvCheck(r.cashFlows, r.xirr!)).toBeCloseTo(0, 4);
+  });
+
+  it("REGRESSÃO: contrato valorizado por valor absoluto (sem unidades) deve computar XIRR", () => {
+    // Quando a valorização é manual/absoluta (unitPrice null, como um seguro
+    // de capitalização sem tracking por UP), quantity fica sempre 0 por
+    // desenho — usar `quantity > 0` como sinal de "posição aberta" faz o
+    // XIRR ficar sempre null, mesmo com capital investido e valorização
+    // recente. O sinal correto é costBasis > 0 (capital ainda não
+    // recuperado). Este teste replica o caso real reportado (reforços
+    // mensais + valorização manual do contrato).
+    const r = assetXirr({
+      assetType: "capitalization_insurance",
+      transactions: [
+        tx("1", "deposit", "2025-07-23T00:00:00.000Z", 0, 50),
+        tx("2", "deposit", "2025-08-23T00:00:00.000Z", 0, 50),
+        tx("3", "deposit", "2025-09-23T00:00:00.000Z", 0, 50),
+      ],
+      valuations: [manualValuation("2026-08-06", 165)],
+      nativeCurrency: "EUR",
+      reportingCurrency: "EUR",
+      asOf: "2026-08-06",
+      unitBased: false,
+    });
+    expect(r.hasTerminalValue).toBe(true);
+    expect(r.cashFlows.at(-1)).toEqual({ date: "2026-08-06", amount: 165 });
     expect(r.xirr).not.toBeNull();
     expect(npvCheck(r.cashFlows, r.xirr!)).toBeCloseTo(0, 4);
   });
