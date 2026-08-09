@@ -126,6 +126,19 @@ export function PerformanceSection({
                 emphasis
                 hint="Taxa anualizada sobre os fluxos de caixa datados"
               />
+              {perf.fxEffect && (
+                <Metric
+                  label="Efeito cambial"
+                  value={perf.fxEffect.total ?? perf.fxEffect.realized}
+                  currency={r.currency}
+                  signed
+                  hint={
+                    perf.fxEffect.total == null
+                      ? "Só sobre o realizado — sem valorização para isolar o não realizado"
+                      : "Parte do ganho que resulta só da variação cambial, não do ativo"
+                  }
+                />
+              )}
             </div>
 
             <dl className="grid gap-3 border-t pt-3 text-xs text-muted-foreground sm:grid-cols-3">

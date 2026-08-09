@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AssetValuation, ExchangeRate, Transaction } from "@/domain/types";
-import { buildRateTable } from "@/services/fx";
+import { buildRateTable, convert } from "@/services/fx";
 import { assetPerformance } from "@/services/performance";
 
 const rate = (base: string, quote: string, date: string, value: number): ExchangeRate => ({
@@ -185,5 +185,78 @@ describe("Performance :: Asset", () => {
     expect(p.reported.currentValue).toBe(1200);
     expect(p.reported.unrealizedGain).toBe(200);
     expect(p.reported.returnPct).toBeCloseTo(0.2, 6);
+  });
+});
+
+describe("Performance :: Efeito cambial (fxEffect)", () => {
+  // Taxa de referência independente (fx.ts diretamente, não performance.ts),
+  // para validar a identidade sem depender da própria implementação testada.
+  const rateConversion = convert(table, { amount: 1, currency: "USD" }, "EUR", "2025-06-30");
+  const rateAtAsOf = rateConversion.status === "ok" ? rateConversion.money.amount : NaN;
+
+  it("moeda única: fxEffect é null (não aplicável)", () => {
+    const p = assetPerformance({
+      assetType: "etf",
+      transactions: [tx("1", "buy", "2025-01-10T12:00:00.000Z", 10, 1000, "EUR")],
+      valuations: [valuation("2025-06-30", 120, "EUR")],
+      nativeCurrency: "EUR",
+      reportingCurrency: "EUR",
+      asOf: "2025-06-30",
+    });
+    expect(p.fxEffect).toBeNull();
+  });
+
+  it("taxa em falta: fxEffect é null mesmo sendo multi-moeda", () => {
+    const p = assetPerformance({
+      assetType: "etf",
+      transactions: [tx("1", "buy", "2025-01-10T12:00:00.000Z", 10, 1000, "JPY")],
+      valuations: [],
+      nativeCurrency: "JPY",
+      reportingCurrency: "EUR",
+      fxTable: table,
+      asOf: "2025-06-30",
+    });
+    expect(p.fxEffect).toBeNull();
+  });
+
+  it("Exemplo A (posição aberta, sem alienações): identidade sobre o não realizado", () => {
+    const p = run(buys, [valuation("2025-06-30", 130)]);
+    expect(p.fxEffect).not.toBeNull();
+    expect(p.fxEffect!.realized).toBeCloseTo(0, 6); // nunca houve venda
+    expect(p.fxEffect!.unrealized).not.toBeNull();
+    // Identidade: ganho reportado = ganho nativo × taxa de hoje + efeito cambial.
+    expect(p.native.unrealizedGain! * rateAtAsOf + p.fxEffect!.unrealized!).toBeCloseTo(
+      p.reported.unrealizedGain!,
+      6,
+    );
+    expect(p.fxEffect!.total).toBeCloseTo(p.fxEffect!.realized + p.fxEffect!.unrealized!, 9);
+  });
+
+  it("Exemplo B (alienação parcial): identidade sobre realizado e não realizado em simultâneo", () => {
+    const p = run(
+      [...buys, tx("3", "sell", "2025-06-20T12:00:00.000Z", 10, 1400)],
+      [valuation("2025-06-30", 130)],
+    );
+    expect(p.fxEffect).not.toBeNull();
+    expect(p.native.realizedGain * rateAtAsOf + p.fxEffect!.realized).toBeCloseTo(
+      p.reported.realizedGain,
+      6,
+    );
+    expect(p.native.unrealizedGain! * rateAtAsOf + p.fxEffect!.unrealized!).toBeCloseTo(
+      p.reported.unrealizedGain!,
+      6,
+    );
+    expect(p.fxEffect!.total).toBeCloseTo(p.fxEffect!.realized + p.fxEffect!.unrealized!, 9);
+  });
+
+  it("posição totalmente alienada sem valorização: realized definido, unrealized/total null", () => {
+    const p = run([...buys, tx("3", "sell", "2025-06-20T12:00:00.000Z", 20, 2600)], []);
+    expect(p.fxEffect).not.toBeNull();
+    expect(p.fxEffect!.unrealized).toBeNull();
+    expect(p.fxEffect!.total).toBeNull();
+    expect(p.native.realizedGain * rateAtAsOf + p.fxEffect!.realized).toBeCloseTo(
+      p.reported.realizedGain,
+      6,
+    );
   });
 });

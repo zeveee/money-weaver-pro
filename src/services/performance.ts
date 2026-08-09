@@ -90,6 +90,36 @@ export interface PerformancePlane {
   returnPct: number | null;
 }
 
+export interface FxEffect {
+  /** Ganho/perda cambial nas mais-valias realizadas (moeda de reporting). */
+  realized: number;
+  /** Ganho/perda cambial nas não realizadas; `null` na mesma condição que
+   *  `unrealizedGain` (sem valorização observada). */
+  unrealized: number | null;
+  /** Soma dos dois; `null` quando `unrealized` é `null`. */
+  total: number | null;
+}
+
+/**
+ * Isola o que, no ganho reportado (histórico, evento a evento), resulta só
+ * do câmbio ter mudado — comparando com "quanto valeria o ganho nativo se
+ * convertido inteiramente à taxa de hoje". `null` quando não há taxa atual
+ * disponível (moeda em falta) ou o ativo não é multi-moeda.
+ */
+function computeFxEffect(
+  nativePlane: PerformancePlane,
+  reportedPlane: PerformancePlane,
+  rateToday: number | null,
+): FxEffect | null {
+  if (rateToday == null) return null;
+  const realized = reportedPlane.realizedGain - nativePlane.realizedGain * rateToday;
+  const unrealized =
+    reportedPlane.unrealizedGain == null || nativePlane.unrealizedGain == null
+      ? null
+      : reportedPlane.unrealizedGain - nativePlane.unrealizedGain * rateToday;
+  return { realized, unrealized, total: unrealized == null ? null : realized + unrealized };
+}
+
 export interface AssetPerformance {
   /** Plano principal: moeda da carteira. Igual ao nativo quando coincidem. */
   reported: PerformancePlane;
@@ -112,6 +142,9 @@ export interface AssetPerformance {
   /** Rentabilidade anualizada (moeda de reporting). `null` quando não é
    *  definível: posição aberta sem valorização, ou fluxos sem solução. */
   xirr: number | null;
+  /** Efeito cambial isolado no ganho reportado; `null` quando o ativo não é
+   *  multi-moeda ou não há taxa atual disponível para a decompor. */
+  fxEffect: FxEffect | null;
 }
 
 export interface AssetPerformanceInput {
@@ -207,6 +240,7 @@ export function assetPerformance(input: AssetPerformanceInput): AssetPerformance
   let missingCurrencies: string[] = [];
   let usedCarryForward = false;
   let usedSettlement = false;
+  let fxEffect: FxEffect | null = null;
 
   if (isMultiCurrency) {
     const projected = projectTransactions(fxTable, transactions, reporting);
@@ -238,6 +272,8 @@ export function assetPerformance(input: AssetPerformanceInput): AssetPerformance
       reportedValue,
       !!reference,
     );
+
+    fxEffect = computeFxEffect(nativePlane, reportedPlane, converted.rate?.rate ?? null);
   }
 
   const { xirr } = assetXirr({
@@ -263,5 +299,6 @@ export function assetPerformance(input: AssetPerformanceInput): AssetPerformance
     usedSettlement,
     inconsistentTransactionIds: position.inconsistentTransactionIds,
     xirr,
+    fxEffect,
   };
 }
