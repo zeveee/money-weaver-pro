@@ -248,6 +248,7 @@ export function assetPerformance(input: AssetPerformanceInput): AssetPerformance
     reportingCurrency: reporting,
     fxTable,
     asOf,
+    unitBased,
   });
 
   return {

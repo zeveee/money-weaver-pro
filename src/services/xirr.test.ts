@@ -284,4 +284,28 @@ describe("XIRR :: assetXirr", () => {
     });
     expect(r.xirr).toBeNull();
   });
+
+  it("REGRESSÃO: seguro de capitalização (unitBased) com reforços recorrentes deve computar XIRR", () => {
+    // Sem `unitBased: true` propagado ao Position Engine, os reforços não
+    // contam como quantidade, a posição fica sempre a 0 unidades, o fluxo
+    // terminal nunca é acrescentado, e sobram só fluxos negativos → null
+    // silencioso. Este teste falha se essa propagação voltar a quebrar.
+    const r = assetXirr({
+      assetType: "capitalization_insurance",
+      transactions: [
+        tx("1", "deposit", "2025-07-23T00:00:00.000Z", 50, 50),
+        tx("2", "deposit", "2025-08-23T00:00:00.000Z", 50, 50),
+        tx("3", "deposit", "2025-09-23T00:00:00.000Z", 50, 50),
+      ],
+      valuations: [valuation("2026-08-06", 1.05)], // 150 UP × 1,05 = 157,5
+      nativeCurrency: "EUR",
+      reportingCurrency: "EUR",
+      asOf: "2026-08-06",
+      unitBased: true,
+    });
+    expect(r.hasTerminalValue).toBe(true);
+    expect(r.cashFlows.at(-1)).toEqual({ date: "2026-08-06", amount: 157.5 });
+    expect(r.xirr).not.toBeNull();
+    expect(npvCheck(r.cashFlows, r.xirr!)).toBeCloseTo(0, 4);
+  });
 });

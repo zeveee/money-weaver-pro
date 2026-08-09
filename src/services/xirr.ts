@@ -149,6 +149,7 @@ export interface AssetXirrInput {
   reportingCurrency?: string | null;
   fxTable?: FxRateTable;
   asOf?: ISODate;
+  unitBased?: boolean;
 }
 
 export interface AssetXirrResult {
@@ -188,7 +189,10 @@ export function assetXirr(input: AssetXirrInput): AssetXirrResult {
     nativeCurrency,
     fxTable = EMPTY_RATE_TABLE,
     asOf = todayISODate(),
+    unitBased = false,
   } = input;
+
+  const options = { unitBased } as const;
 
   const native = (nativeCurrency || "").toUpperCase();
   const reporting = (input.reportingCurrency || "").toUpperCase() || native;
@@ -203,7 +207,7 @@ export function assetXirr(input: AssetXirrInput): AssetXirrResult {
     .map(cashFlowForTransaction)
     .filter((f): f is CashFlow => f !== null);
 
-  const position = buildPosition(assetType, inWindow, { asOf });
+  const position = buildPosition(assetType, inWindow, { ...options, asOf });
   let hasTerminalValue = true;
 
   if (position.quantity > 0) {
@@ -211,7 +215,8 @@ export function assetXirr(input: AssetXirrInput): AssetXirrResult {
     if (!reference) {
       hasTerminalValue = false;
     } else {
-      const quantityAt: QuantityAt = (date) => positionAt(assetType, inWindow, date).quantity;
+      const quantityAt: QuantityAt = (date) =>
+        positionAt(assetType, inWindow, date, options).quantity;
       const nativeValue = resolveValuationValue(reference, quantityAt);
       const converted = isMultiCurrency
         ? reportCurrentValue(fxTable, { amount: nativeValue, currency: reference.currency || native }, reporting)
