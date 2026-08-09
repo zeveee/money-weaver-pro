@@ -13,7 +13,9 @@
  * correndo o mesmo algoritmo cronológico sobre os valores convertidos.
  * Nunca se converte um total nativo com a taxa de hoje.
  *
- * Fora de âmbito nesta fase: XIRR, TWR e MWR.
+ * XIRR (fluxos de caixa datados, moeda de reporting) vive em `xirr.ts` e é
+ * incluído aqui como métrica adicional; a lógica de fluxos não é duplicada.
+ * Fora de âmbito nesta fase: TWR e MWR.
  */
 
 import type { AssetType, AssetValuation, ISODate, Transaction } from "@/domain/types";
@@ -27,6 +29,7 @@ import {
 } from "@/services/valuation-metrics";
 import { projectTransactions, reportCurrentValue } from "@/services/reporting";
 import { EMPTY_RATE_TABLE, type FxRateTable } from "@/services/fx";
+import { assetXirr } from "@/services/xirr";
 
 /** Agregados de fluxo que não passam pelo custo da posição. */
 interface FlowTotals {
@@ -106,6 +109,9 @@ export interface AssetPerformance {
   usedSettlement: boolean;
   /** Transações com dados incoerentes detetadas pelo Position Engine. */
   inconsistentTransactionIds: string[];
+  /** Rentabilidade anualizada (moeda de reporting). `null` quando não é
+   *  definível: posição aberta sem valorização, ou fluxos sem solução. */
+  xirr: number | null;
 }
 
 export interface AssetPerformanceInput {
@@ -234,6 +240,16 @@ export function assetPerformance(input: AssetPerformanceInput): AssetPerformance
     );
   }
 
+  const { xirr } = assetXirr({
+    assetType,
+    transactions,
+    valuations,
+    nativeCurrency: native,
+    reportingCurrency: reporting,
+    fxTable,
+    asOf,
+  });
+
   return {
     reported: reportedPlane,
     native: nativePlane,
@@ -245,5 +261,6 @@ export function assetPerformance(input: AssetPerformanceInput): AssetPerformance
     usedCarryForward,
     usedSettlement,
     inconsistentTransactionIds: position.inconsistentTransactionIds,
+    xirr,
   };
 }

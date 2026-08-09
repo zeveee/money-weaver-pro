@@ -119,6 +119,13 @@ export function PerformanceSection({
                 emphasis
                 hint="Ganho total sobre o capital aplicado bruto"
               />
+              <Metric
+                label="Rentabilidade anualizada (XIRR)"
+                percent={perf.xirr}
+                signed
+                emphasis
+                hint="Taxa anualizada sobre os fluxos de caixa datados"
+              />
             </div>
 
             <dl className="grid gap-3 border-t pt-3 text-xs text-muted-foreground sm:grid-cols-3">
@@ -223,7 +230,16 @@ function Notes({
       `${perf.inconsistentTransactionIds.length} transação(ões) com dados incoerentes foram tratadas apenas em custo.`,
     );
   }
-  notes.push("Rentabilidade simples, não anualizada. XIRR e TWR ficam para uma fase seguinte.");
+  if (perf.xirr == null && perf.valueSource !== "none") {
+    notes.push(
+      perf.valueSource === "cost"
+        ? "XIRR indisponível: sem valorização observada para a posição em aberto."
+        : "XIRR indisponível para este conjunto de fluxos (dados incompletos ou sem solução matemática).",
+    );
+  }
+  notes.push(
+    "Rentabilidade simples: ganho total sobre o capital aplicado bruto, não anualizada. TWR fica para uma fase seguinte.",
+  );
 
   return (
     <ul className="space-y-1 text-xs text-muted-foreground">
