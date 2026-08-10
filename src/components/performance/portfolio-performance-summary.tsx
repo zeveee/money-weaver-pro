@@ -75,9 +75,12 @@ export function PortfolioPerformanceSummary({
         {loading ? (
           <p className="text-sm text-muted-foreground">A calcular…</p>
         ) : perf.assetsWithTransactions === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Sem transações registadas nesta carteira — ainda não há performance a apresentar.
-          </p>
+          <>
+            <p className="text-sm text-muted-foreground">
+              Sem transações registadas nesta carteira — ainda não há performance a apresentar.
+            </p>
+            <AssetBreakdown perf={perf} assets={assets} />
+          </>
         ) : (
           <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -324,13 +327,19 @@ function AssetBreakdown({
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const groups = buildGroups(perf.perAsset, assets);
-  if (groups.length === 0) return null;
+  const grouped = new Set(groups.flatMap((g) => g.rows.map((r) => r.asset.id)));
+  const idleAssets = assets
+    .filter((a) => !grouped.has(a.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (groups.length === 0 && idleAssets.length === 0) return null;
 
   const currency = perf.currency;
 
   return (
     <div className="space-y-2 border-t pt-3">
-      <p className="text-xs font-medium text-muted-foreground">Detalhe por tipo de ativo</p>
+      {groups.length > 0 && (
+        <p className="text-xs font-medium text-muted-foreground">Detalhe por tipo de ativo</p>
+      )}
       {groups.map((g) => {
         const open = !!expanded[g.type];
         return (
@@ -438,6 +447,28 @@ function AssetBreakdown({
           </div>
         );
       })}
+
+      {idleAssets.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <p className="text-xs font-medium text-muted-foreground">Ativos sem transações</p>
+          <ul className="divide-y rounded-lg border">
+            {idleAssets.map((asset) => (
+              <li key={asset.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                <Link
+                  to="/app/asset/$assetId"
+                  params={{ assetId: asset.id }}
+                  className="text-sm hover:underline"
+                >
+                  {asset.name}
+                </Link>
+                <Badge variant="secondary">
+                  {ASSET_PROFILES[asset.type]?.label ?? asset.type}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
