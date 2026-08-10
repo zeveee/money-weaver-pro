@@ -34,28 +34,12 @@ function PortfolioDetailPage() {
   });
 
   const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<Asset | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["assets", portfolioId] });
 
   const createM = useMutation({
     mutationFn: (input: AssetWriteInput) => createAsset({ ...input, portfolioId }),
     onSuccess: () => { invalidate(); setCreating(false); toast.success("Ativo criado"); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const updateM = useMutation({
-    mutationFn: (v: { id: string; input: AssetWriteInput }) => updateAsset(v.id, v.input),
-    onSuccess: (a) => {
-      invalidate();
-      qc.invalidateQueries({ queryKey: ["asset", a.id] });
-      setEditing(null);
-      toast.success("Ativo atualizado");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const deleteM = useMutation({
-    mutationFn: deleteAsset,
-    onSuccess: () => { invalidate(); toast.success("Ativo eliminado"); },
     onError: (e: Error) => toast.error(e.message),
   });
 
