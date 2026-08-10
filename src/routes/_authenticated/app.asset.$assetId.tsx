@@ -109,6 +109,41 @@ function AssetDetailPage() {
         <h1 className="text-2xl font-semibold">{asset.name}</h1>
         <Badge variant="secondary">{profile.label}</Badge>
         <Badge variant="outline">{asset.currency}</Badge>
+        <div className="flex gap-2">
+          <Dialog open={editing} onOpenChange={setEditing}>
+            <DialogTrigger asChild><Button variant="outline" size="sm">Editar</Button></DialogTrigger>
+            {editing && (
+              <AssetFormDialog
+                title="Editar ativo"
+                asset={asset}
+                onSubmit={(input) => updateM.mutate(input)}
+                loading={updateM.isPending}
+              />
+            )}
+          </Dialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">Eliminar</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Eliminar "{asset.name}"?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  As transações e valorações associadas serão eliminadas. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={deleteM.isPending}
+                  onClick={() => deleteM.mutate({ id: asset.id, portfolioId: asset.portfolioId })}
+                >
+                  Eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">{profile.purpose}</p>
 
