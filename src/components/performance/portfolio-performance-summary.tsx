@@ -75,9 +75,12 @@ export function PortfolioPerformanceSummary({
         {loading ? (
           <p className="text-sm text-muted-foreground">A calcular…</p>
         ) : perf.assetsWithTransactions === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Sem transações registadas nesta carteira — ainda não há performance a apresentar.
-          </p>
+          <>
+            <p className="text-sm text-muted-foreground">
+              Sem transações registadas nesta carteira — ainda não há performance a apresentar.
+            </p>
+            <AssetBreakdown perf={perf} assets={assets} />
+          </>
         ) : (
           <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
