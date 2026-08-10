@@ -245,3 +245,190 @@ function Notes({ perf }: { perf: ReturnType<typeof portfolioPerformance> }) {
     </ul>
   );
 }
+
+type PerAsset = ReturnType<typeof portfolioPerformance>["perAsset"][number];
+
+interface TypeGroup {
+  type: AssetType;
+  label: string;
+  rows: { asset: Asset; perf: PerAsset["performance"] }[];
+  investedCapital: number;
+  currentValue: number | null;
+  totalGain: number | null;
+  returnPct: number | null;
+}
+
+function buildGroups(
+  perAsset: PerAsset[],
+  assets: Asset[],
+  ): TypeGroup[] {
+  const byType = new Map<AssetType, { asset: Asset; perf: PerAsset["performance"] }[]>();
+
+  for (const entry of perAsset) {
+    const asset = assets.find((a) => a.id === entry.assetId);
+    if (!asset) continue;
+    const p = entry.performance;
+    if (p.reported.investedCapital === 0 && p.quantity === 0) continue;
+    const list = byType.get(asset.type) ?? [];
+    list.push({ asset, perf: p });
+    byType.set(asset.type, list);
+  }
+
+  const groups: TypeGroup[] = [];
+  for (const [type, rows] of byType) {
+    let investedCapital = 0;
+    let gross = 0;
+    let currentValue: number | null = null;
+    let totalGain: number | null = null;
+
+    for (const { perf } of rows) {
+      investedCapital += perf.reported.investedCapital;
+      gross += perf.reported.grossContributions;
+      if (perf.reported.currentValue != null) {
+        currentValue = (currentValue ?? 0) + perf.reported.currentValue;
+      }
+      if (perf.reported.totalGain != null) {
+        totalGain = (totalGain ?? 0) + perf.reported.totalGain;
+      }
+    }
+
+    rows.sort((a, b) => (b.perf.reported.currentValue ?? 0) - (a.perf.reported.currentValue ?? 0));
+
+    groups.push({
+      type,
+      label: ASSET_PROFILES[type]?.label ?? type,
+      rows,
+      investedCapital,
+      currentValue,
+      totalGain,
+      returnPct: totalGain == null || gross <= 0 ? null : totalGain / gross,
+    });
+  }
+
+  groups.sort((a, b) => (b.currentValue ?? 0) - (a.currentValue ?? 0));
+  return groups;
+}
+
+function signedTone(value: number | null | undefined) {
+  if (value == null || value === 0) return "";
+  return value > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive";
+}
+
+function AssetBreakdown({
+  perf,
+  assets,
+}: {
+  perf: ReturnType<typeof portfolioPerformance>;
+  assets: Asset[];
+}) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const groups = buildGroups(perf.perAsset, assets);
+  if (groups.length === 0) return null;
+
+  const currency = perf.currency;
+
+  return (
+    <div className="space-y-2 border-t pt-3">
+      <p className="text-xs font-medium text-muted-foreground">Detalhe por tipo de ativo</p>
+      {groups.map((g) => {
+        const open = !!expanded[g.type];
+        return (
+          <div key={g.type} className="rounded-lg border">
+            <button
+              type="button"
+              onClick={() => setExpanded((s) => ({ ...s, [g.type]: !s[g.type] }))}
+              aria-expanded={open}
+              className="flex w-full items-center gap-3 px-3 py-2 text-left"
+            >
+              <ChevronRight
+                className={cn("size-4 shrink-0 transition-transform", open && "rotate-90")}
+              />
+              <span className="flex-1 text-sm font-medium">
+                {g.label}{" "}
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({g.rows.length})
+                </span>
+              </span>
+              <span className="hidden text-xs tabular-nums text-muted-foreground sm:inline">
+                {formatCurrency(g.investedCapital, currency)}
+              </span>
+              <span className="text-xs tabular-nums">
+                {g.currentValue == null ? "—" : formatCurrency(g.currentValue, currency)}
+              </span>
+              <span className={cn("text-xs tabular-nums", signedTone(g.totalGain))}>
+                {g.totalGain == null ? "—" : formatCurrency(g.totalGain, currency)}
+              </span>
+              <span className={cn("text-xs tabular-nums", signedTone(g.returnPct))}>
+                {g.returnPct == null ? "—" : formatPercent(g.returnPct)}
+              </span>
+            </button>
+
+            {open && (
+              <div className="overflow-x-auto border-t">
+                <table className="w-full text-xs">
+                  <thead className="text-muted-foreground">
+                    <tr className="border-b">
+                      <th className="px-3 py-2 text-left font-normal">Ativo</th>
+                      <th className="px-3 py-2 text-right font-normal">Capital investido</th>
+                      <th className="px-3 py-2 text-right font-normal">Valor atual</th>
+                      <th className="px-3 py-2 text-right font-normal">Ganho total</th>
+                      <th className="px-3 py-2 text-right font-normal">Rentabilidade</th>
+                      <th className="px-3 py-2 text-right font-normal">XIRR</th>
+                      <th className="px-3 py-2 text-right font-normal">Efeito cambial</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.rows.map(({ asset, perf: p }) => {
+                      const fx = p.fxEffect?.total ?? p.fxEffect?.realized ?? null;
+                      return (
+                        <tr key={asset.id} className="border-b last:border-0">
+                          <td className="px-3 py-2">{asset.name}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            {formatCurrency(p.reported.investedCapital, currency)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            {p.reported.currentValue == null
+                              ? "—"
+                              : formatCurrency(p.reported.currentValue, currency)}
+                          </td>
+                          <td
+                            className={cn(
+                              "px-3 py-2 text-right tabular-nums",
+                              signedTone(p.reported.totalGain),
+                            )}
+                          >
+                            {p.reported.totalGain == null
+                              ? "—"
+                              : formatCurrency(p.reported.totalGain, currency)}
+                          </td>
+                          <td
+                            className={cn(
+                              "px-3 py-2 text-right tabular-nums",
+                              signedTone(p.reported.returnPct),
+                            )}
+                          >
+                            {p.reported.returnPct == null
+                              ? "—"
+                              : formatPercent(p.reported.returnPct)}
+                          </td>
+                          <td
+                            className={cn("px-3 py-2 text-right tabular-nums", signedTone(p.xirr))}
+                          >
+                            {p.xirr == null ? "—" : formatPercent(p.xirr)}
+                          </td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums", signedTone(fx))}>
+                            {fx == null ? "—" : formatCurrency(fx, currency)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
