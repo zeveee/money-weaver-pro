@@ -1,10 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getAsset } from "@/repositories/assets";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+import { getAsset, updateAsset, deleteAsset, type AssetWriteInput } from "@/repositories/assets";
 import { getPortfolio } from "@/repositories/portfolios";
 import { getAssetFields, getAssetProfile } from "@/domain/asset-profiles";
+import { AssetFormDialog } from "@/components/assets/asset-form-dialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ChevronRight } from "lucide-react";
 import { TransactionsSection } from "@/components/transactions/transactions-section";
 import { RecurringSection } from "@/components/recurring/recurring-section";
@@ -43,6 +52,32 @@ function AssetDetailPage() {
     enabled: !!assetId,
   });
 
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [editing, setEditing] = useState(false);
+
+  const updateM = useMutation({
+    mutationFn: (input: AssetWriteInput) => updateAsset(assetId, input),
+    onSuccess: (a) => {
+      qc.invalidateQueries({ queryKey: ["asset", assetId] });
+      qc.invalidateQueries({ queryKey: ["assets", a.portfolioId] });
+      setEditing(false);
+      toast.success("Ativo atualizado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteM = useMutation({
+    mutationFn: (v: { id: string; portfolioId: string }) => deleteAsset(v.id),
+    onSuccess: (_r, v) => {
+      qc.removeQueries({ queryKey: ["asset", assetId] });
+      qc.invalidateQueries({ queryKey: ["assets", v.portfolioId] });
+      toast.success("Ativo eliminado");
+      navigate({ to: "/app/portfolio/$portfolioId", params: { portfolioId: v.portfolioId } });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <p className="text-sm text-muted-foreground">A carregar…</p>;
   if (!asset) return <p className="text-sm text-muted-foreground">Ativo não encontrado.</p>;
 
@@ -74,6 +109,41 @@ function AssetDetailPage() {
         <h1 className="text-2xl font-semibold">{asset.name}</h1>
         <Badge variant="secondary">{profile.label}</Badge>
         <Badge variant="outline">{asset.currency}</Badge>
+        <div className="flex gap-2">
+          <Dialog open={editing} onOpenChange={setEditing}>
+            <DialogTrigger asChild><Button variant="outline" size="sm">Editar</Button></DialogTrigger>
+            {editing && (
+              <AssetFormDialog
+                title="Editar ativo"
+                asset={asset}
+                onSubmit={(input) => updateM.mutate(input)}
+                loading={updateM.isPending}
+              />
+            )}
+          </Dialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">Eliminar</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Eliminar "{asset.name}"?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  As transações e valorações associadas serão eliminadas. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={deleteM.isPending}
+                  onClick={() => deleteM.mutate({ id: asset.id, portfolioId: asset.portfolioId })}
+                >
+                  Eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">{profile.purpose}</p>
 
