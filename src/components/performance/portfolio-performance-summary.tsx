@@ -444,6 +444,28 @@ function AssetBreakdown({
           </div>
         );
       })}
+
+      {idleAssets.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <p className="text-xs font-medium text-muted-foreground">Ativos sem transações</p>
+          <ul className="divide-y rounded-lg border">
+            {idleAssets.map((asset) => (
+              <li key={asset.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                <Link
+                  to="/app/asset/$assetId"
+                  params={{ assetId: asset.id }}
+                  className="text-sm hover:underline"
+                >
+                  {asset.name}
+                </Link>
+                <Badge variant="secondary">
+                  {ASSET_PROFILES[asset.type]?.label ?? asset.type}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
