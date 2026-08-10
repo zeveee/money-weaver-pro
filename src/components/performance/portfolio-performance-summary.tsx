@@ -109,6 +109,30 @@ export function PortfolioPerformanceSummary({
                 emphasis
                 hint="Ganho total sobre o capital aplicado bruto"
               />
+              <Metric
+                label="Rentabilidade anualizada (XIRR)"
+                percent={perf.xirr}
+                signed
+                emphasis
+                hint={
+                  perf.assetsExcludedFromXirr > 0
+                    ? `${perf.assetsExcludedFromXirr} ativo(s) sem valorização impedem o cálculo`
+                    : "Taxa anualizada sobre os fluxos combinados da carteira"
+                }
+              />
+              {perf.fxEffect && (
+                <Metric
+                  label="Efeito cambial"
+                  value={perf.fxEffect.total ?? perf.fxEffect.realized}
+                  currency={perf.currency}
+                  signed
+                  hint={
+                    perf.fxEffect.total == null
+                      ? "Só sobre o realizado — falta valorização nalgum ativo multi-moeda"
+                      : "Soma do efeito cambial de todos os ativos multi-moeda"
+                  }
+                />
+              )}
             </div>
 
             <dl className="grid gap-3 border-t pt-3 text-xs text-muted-foreground sm:grid-cols-3">
@@ -203,6 +227,9 @@ function Notes({ perf }: { perf: ReturnType<typeof portfolioPerformance> }) {
     notes.push(
       `${perf.inconsistentTransactionIds.length} transação(ões) com dados incoerentes foram tratadas apenas em custo.`,
     );
+  }
+  if (perf.xirr == null && perf.assetsExcludedFromXirr === 0 && perf.assetsWithTransactions > 0) {
+    notes.push("XIRR indisponível para este conjunto de fluxos (sem solução matemática).");
   }
   notes.push("Rentabilidade simples, não anualizada, sobre os totais agregados da carteira.");
 

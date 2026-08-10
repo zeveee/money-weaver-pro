@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AssetValuation, ExchangeRate, Transaction } from "@/domain/types";
 import { buildRateTable } from "@/services/fx";
 import { portfolioPerformance } from "@/services/portfolio-performance";
+import { assetXirr, xirr as solveXirr } from "@/services/xirr";
 
 const rate = (base: string, quote: string, date: string, value: number): ExchangeRate => ({
   id: `${base}-${quote}-${date}`,
@@ -178,5 +179,156 @@ describe("Performance :: Portfolio", () => {
     ]);
     expect(p.grossContributions).toBe(0);
     expect(p.returnPct).toBeNull();
+  });
+});
+
+describe("Performance :: Portfolio XIRR", () => {
+  it("carteira vazia: xirr null, nada excluído", () => {
+    const p = run([]);
+    expect(p.xirr).toBeNull();
+    expect(p.assetsExcludedFromXirr).toBe(0);
+  });
+
+  it("combina os fluxos de dois ativos — não é a média nem a soma dos XIRR individuais", () => {
+    const assets: Parameters<typeof portfolioPerformance>[0]["assets"] = [
+      {
+        assetId: "a",
+        assetType: "etf",
+        nativeCurrency: "EUR",
+        transactions: [tx("1", "a", "buy", "2025-01-10T12:00:00.000Z", 10, 1000)],
+        valuations: [valuation("a", "2025-06-30", 120)],
+      },
+      {
+        assetId: "b",
+        assetType: "etf",
+        nativeCurrency: "EUR",
+        transactions: [tx("2", "b", "buy", "2025-06-10T12:00:00.000Z", 10, 900)],
+        valuations: [valuation("b", "2025-06-30", 92)],
+      },
+    ];
+    const p = run(assets);
+    expect(p.xirr).not.toBeNull();
+
+    // Reconstrói o XIRR esperado combinando os fluxos dos dois ativos com
+    // o próprio assetXirr() (já testado isoladamente), sem depender de
+    // nenhum número mágico nem repetir a lógica de agregação testada.
+    const combined = assets.flatMap(
+      (a) =>
+        assetXirr({
+          assetType: a.assetType,
+          transactions: a.transactions,
+          valuations: a.valuations,
+          nativeCurrency: a.nativeCurrency,
+          reportingCurrency: "EUR",
+          fxTable: table,
+          asOf: "2025-06-30",
+        }).cashFlows,
+    );
+    expect(p.xirr!).toBeCloseTo(solveXirr(combined)!, 9);
+
+    // E confirma que isto NÃO é a média simples dos XIRR por ativo (só por
+    // coincidência dois investimentos diferentes dariam a mesma coisa).
+    const xirrA = p.perAsset.find((x) => x.assetId === "a")!.performance.xirr!;
+    const xirrB = p.perAsset.find((x) => x.assetId === "b")!.performance.xirr!;
+    expect(p.xirr!).not.toBeCloseTo((xirrA + xirrB) / 2, 3);
+  });
+
+  it("ativo com posição aberta sem valorização: xirr da carteira fica null e a contagem reflete isso", () => {
+    const p = run([
+      {
+        assetId: "a",
+        assetType: "etf",
+        nativeCurrency: "EUR",
+        transactions: [tx("1", "a", "buy", "2025-01-10T12:00:00.000Z", 10, 1000)],
+        valuations: [valuation("a", "2025-06-30", 120)],
+      },
+      {
+        assetId: "b",
+        assetType: "etf",
+        nativeCurrency: "EUR",
+        transactions: [tx("2", "b", "buy", "2025-01-10T12:00:00.000Z", 10, 500)],
+        valuations: [], // posição aberta, sem valorização
+      },
+    ]);
+    expect(p.assetsExcludedFromXirr).toBe(1);
+    expect(p.xirr).toBeNull();
+  });
+
+  it("ativo totalmente alienado sem valorização não bloqueia o xirr da carteira", () => {
+    const p = run([
+      {
+        assetId: "a",
+        assetType: "etf",
+        nativeCurrency: "EUR",
+        transactions: [
+          tx("1", "a", "buy", "2025-01-10T12:00:00.000Z", 10, 1000),
+          tx("2", "a", "sell", "2025-06-10T12:00:00.000Z", 10, 1100),
+        ],
+        valuations: [],
+      },
+    ]);
+    expect(p.assetsExcludedFromXirr).toBe(0);
+    expect(p.xirr).not.toBeNull();
+  });
+});
+
+describe("Performance :: Portfolio fxEffect", () => {
+  it("moeda única: fxEffect null (nenhum ativo é multi-moeda)", () => {
+    const p = run([
+      {
+        assetId: "a",
+        assetType: "etf",
+        nativeCurrency: "EUR",
+        transactions: [tx("1", "a", "buy", "2025-01-10T12:00:00.000Z", 10, 1000)],
+        valuations: [valuation("a", "2025-06-30", 120)],
+      },
+    ]);
+    expect(p.fxEffect).toBeNull();
+  });
+
+  it("soma o efeito cambial de vários ativos multi-moeda (já todos na moeda base)", () => {
+    const p = run([
+      {
+        assetId: "a",
+        assetType: "etf",
+        nativeCurrency: "USD",
+        transactions: [tx("1", "a", "buy", "2025-01-10T12:00:00.000Z", 10, 1100, "USD")],
+        valuations: [valuation("a", "2025-06-30", 130, "USD")],
+      },
+      {
+        assetId: "b",
+        assetType: "etf",
+        nativeCurrency: "USD",
+        transactions: [tx("2", "b", "buy", "2025-06-10T12:00:00.000Z", 10, 1050, "USD")],
+        valuations: [valuation("b", "2025-06-30", 108, "USD")],
+      },
+    ]);
+    expect(p.fxEffect).not.toBeNull();
+    const a = p.perAsset.find((x) => x.assetId === "a")!.performance.fxEffect!;
+    const b = p.perAsset.find((x) => x.assetId === "b")!.performance.fxEffect!;
+    expect(p.fxEffect!.realized).toBeCloseTo(a.realized + b.realized, 9);
+    expect(p.fxEffect!.unrealized!).toBeCloseTo(a.unrealized! + b.unrealized!, 9);
+  });
+
+  it("mistura ativo EUR (sem fxEffect) com ativo USD: soma só o que se aplica", () => {
+    const p = run([
+      {
+        assetId: "a",
+        assetType: "etf",
+        nativeCurrency: "EUR",
+        transactions: [tx("1", "a", "buy", "2025-01-10T12:00:00.000Z", 10, 1000)],
+        valuations: [valuation("a", "2025-06-30", 120)],
+      },
+      {
+        assetId: "b",
+        assetType: "etf",
+        nativeCurrency: "USD",
+        transactions: [tx("2", "b", "buy", "2025-01-10T12:00:00.000Z", 10, 1100, "USD")],
+        valuations: [valuation("b", "2025-06-30", 130, "USD")],
+      },
+    ]);
+    const b = p.perAsset.find((x) => x.assetId === "b")!.performance.fxEffect!;
+    expect(p.perAsset.find((x) => x.assetId === "a")!.performance.fxEffect).toBeNull();
+    expect(p.fxEffect!.realized).toBeCloseTo(b.realized, 9);
   });
 });
