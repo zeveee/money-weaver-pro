@@ -124,7 +124,7 @@ export function NewTransactionDialog({
       </DialogHeader>
 
       <Input
-        placeholder="Pesquisar por nome…"
+        placeholder="Pesquisar por nome, ticker ou ISIN…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
