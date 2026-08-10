@@ -11,6 +11,9 @@ import { portfolioPerformance } from "@/services/portfolio-performance";
 import { formatCurrency, formatPercent } from "@/lib/number-format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { BulkValuationDialog } from "@/components/performance/bulk-valuation-dialog";
 import { cn } from "@/lib/utils";
 
 /**
