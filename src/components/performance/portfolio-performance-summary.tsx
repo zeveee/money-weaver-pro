@@ -68,11 +68,38 @@ export function PortfolioPerformanceSummary({
     })),
   });
 
+  const qc = useQueryClient();
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const transactionsByAssetId: Record<string, Transaction[]> = Object.fromEntries(
+    assets.map((a, i) => [a.id, txQueries[i]?.data ?? []]),
+  );
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-base">Performance da carteira</CardTitle>
-        <Badge variant="outline">valores em {perf.currency}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">valores em {perf.currency}</Badge>
+          <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                Atualizar valorizações
+              </Button>
+            </DialogTrigger>
+            {bulkOpen && (
+              <BulkValuationDialog
+                assets={assets}
+                transactionsByAssetId={transactionsByAssetId}
+                onDone={() => {
+                  for (const a of assets) {
+                    qc.invalidateQueries({ queryKey: ["valuations", a.id] });
+                  }
+                  setBulkOpen(false);
+                }}
+              />
+            )}
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
