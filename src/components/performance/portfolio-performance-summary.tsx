@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { BulkValuationDialog } from "@/components/performance/bulk-valuation-dialog";
+import { NewTransactionDialog } from "@/components/transactions/new-transaction-dialog";
 import { cn } from "@/lib/utils";
 
 /**
@@ -70,6 +71,7 @@ export function PortfolioPerformanceSummary({
 
   const qc = useQueryClient();
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [txOpen, setTxOpen] = useState(false);
   const transactionsByAssetId: Record<string, Transaction[]> = Object.fromEntries(
     assets.map((a, i) => [a.id, txQueries[i]?.data ?? []]),
   );
@@ -80,6 +82,24 @@ export function PortfolioPerformanceSummary({
         <CardTitle className="text-base">Performance da carteira</CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant="outline">valores em {perf.currency}</Badge>
+          <Dialog open={txOpen} onOpenChange={setTxOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                Nova transação
+              </Button>
+            </DialogTrigger>
+            {txOpen && (
+              <NewTransactionDialog
+                open={txOpen}
+                onOpenChange={setTxOpen}
+                assets={assets}
+                transactionsByAssetId={transactionsByAssetId}
+                reportingCurrency={base}
+                fxTable={fxTable}
+                onCreated={() => undefined}
+              />
+            )}
+          </Dialog>
           <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="outline">

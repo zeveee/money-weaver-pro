@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import type { AssetType, Transaction, TransactionType } from "@/domain/types";
 import {
@@ -93,6 +93,7 @@ export function TransactionFormDialog({
   fxTable = EMPTY_RATE_TABLE,
   onSubmit,
   loading,
+  header,
 }: {
   title: string;
   assetType: AssetType;
@@ -109,6 +110,8 @@ export function TransactionFormDialog({
   fxTable?: FxRateTable;
   onSubmit: (input: TransactionWriteInput) => void;
   loading: boolean;
+  /** Slot opcional acima do título (ex.: "‹ Trocar ativo"). Puramente visual. */
+  header?: ReactNode;
 }) {
   const [values, setValues] = useState<TransactionFormValues>(() =>
     initialValues(assetType, currency, transaction),
@@ -290,6 +293,7 @@ export function TransactionFormDialog({
   return (
     <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
+        {header}
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>
           As transações são a fonte de verdade do histórico financeiro do ativo. A posição
