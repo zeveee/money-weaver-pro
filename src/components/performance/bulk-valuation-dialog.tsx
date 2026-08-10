@@ -71,7 +71,7 @@ export function BulkValuationDialog({
     const results = await Promise.allSettled(
       targets.map((r) => {
         const n = Number(values[r.asset.id]);
-        const isUnit = r.spec.mode === "unit_price";
+        const isUnit = r.spec.mode === "unit_price" && !manualOverride[r.asset.id];
         return createValuation({
           assetId: r.asset.id,
           valuationDate,
