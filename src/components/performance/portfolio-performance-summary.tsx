@@ -80,6 +80,24 @@ export function PortfolioPerformanceSummary({
         <CardTitle className="text-base">Performance da carteira</CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant="outline">valores em {perf.currency}</Badge>
+          <Dialog open={txOpen} onOpenChange={setTxOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                Nova transação
+              </Button>
+            </DialogTrigger>
+            {txOpen && (
+              <NewTransactionDialog
+                open={txOpen}
+                onOpenChange={setTxOpen}
+                assets={assets}
+                transactionsByAssetId={transactionsByAssetId}
+                reportingCurrency={base}
+                fxTable={fxTable}
+                onCreated={() => undefined}
+              />
+            )}
+          </Dialog>
           <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="outline">
