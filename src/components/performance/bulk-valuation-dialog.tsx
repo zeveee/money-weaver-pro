@@ -116,16 +116,37 @@ export function BulkValuationDialog({
           {rows.map(({ asset, spec, quantity }) => {
             const raw = values[asset.id] ?? "";
             const n = Number(raw);
-            const derived =
-              spec.mode === "unit_price" && raw !== "" && Number.isFinite(n) ? n * quantity : null;
+            const manual = manualOverride[asset.id] === true;
+            const unitMode = spec.mode === "unit_price" && !manual;
+            const derived = unitMode && raw !== "" && Number.isFinite(n) ? n * quantity : null;
             return (
               <div key={asset.id} className="grid gap-1 rounded-lg border p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium">{asset.name}</p>
                   <span className="text-xs text-muted-foreground">{asset.currency}</span>
                 </div>
+                {spec.mode === "unit_price" && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      id={`bulk-val-override-${asset.id}`}
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={manual}
+                      onChange={(e) => {
+                        setManualOverride((prev) => ({ ...prev, [asset.id]: e.target.checked }));
+                        setValues((prev) => ({ ...prev, [asset.id]: "" }));
+                      }}
+                    />
+                    <Label
+                      htmlFor={`bulk-val-override-${asset.id}`}
+                      className="text-xs font-normal"
+                    >
+                      Definir {spec.totalLabel.toLowerCase()} manualmente
+                    </Label>
+                  </div>
+                )}
                 <Label htmlFor={`bulk-val-${asset.id}`} className="text-xs font-normal text-muted-foreground">
-                  {spec.label}
+                  {manual ? spec.totalLabel : spec.label}
                 </Label>
                 <Input
                   id={`bulk-val-${asset.id}`}
@@ -137,7 +158,7 @@ export function BulkValuationDialog({
                     setValues((prev) => ({ ...prev, [asset.id]: e.target.value }))
                   }
                 />
-                {spec.mode === "unit_price" && (
+                {unitMode && (
                   <p className="text-xs text-muted-foreground">
                     Quantidade detida a {valuationDate}: {formatQuantity(quantity)}
                     {derived != null && (
