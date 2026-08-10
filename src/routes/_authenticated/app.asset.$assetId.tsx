@@ -52,6 +52,32 @@ function AssetDetailPage() {
     enabled: !!assetId,
   });
 
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [editing, setEditing] = useState(false);
+
+  const updateM = useMutation({
+    mutationFn: (input: AssetWriteInput) => updateAsset(assetId, input),
+    onSuccess: (a) => {
+      qc.invalidateQueries({ queryKey: ["asset", assetId] });
+      qc.invalidateQueries({ queryKey: ["assets", a.portfolioId] });
+      setEditing(false);
+      toast.success("Ativo atualizado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteM = useMutation({
+    mutationFn: (v: { id: string; portfolioId: string }) => deleteAsset(v.id),
+    onSuccess: (_r, v) => {
+      qc.removeQueries({ queryKey: ["asset", assetId] });
+      qc.invalidateQueries({ queryKey: ["assets", v.portfolioId] });
+      toast.success("Ativo eliminado");
+      navigate({ to: "/app/portfolio/$portfolioId", params: { portfolioId: v.portfolioId } });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <p className="text-sm text-muted-foreground">A carregar…</p>;
   if (!asset) return <p className="text-sm text-muted-foreground">Ativo não encontrado.</p>;
 
