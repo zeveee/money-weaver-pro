@@ -157,6 +157,8 @@ export function PortfolioPerformanceSummary({
             </dl>
 
             <Notes perf={perf} />
+
+            <AssetBreakdown perf={perf} assets={assets} />
           </>
         )}
       </CardContent>
