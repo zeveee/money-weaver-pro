@@ -52,7 +52,12 @@ export function NewTransactionDialog({
     const q = query.trim().toLowerCase();
     const byType = new Map<AssetType, Asset[]>();
     for (const a of assets) {
-      if (q && !a.name.toLowerCase().includes(q)) continue;
+      const matches =
+        !q ||
+        a.name.toLowerCase().includes(q) ||
+        (a.ticker?.toLowerCase().includes(q) ?? false) ||
+        (a.isin?.toLowerCase().includes(q) ?? false);
+      if (!matches) continue;
       const list = byType.get(a.type) ?? [];
       list.push(a);
       byType.set(a.type, list);
