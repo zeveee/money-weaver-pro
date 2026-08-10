@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import type { Asset, AssetType } from "@/domain/types";
+import type { Asset, AssetType, Transaction } from "@/domain/types";
 import { isUnitBased, ASSET_PROFILES } from "@/domain/asset-profiles";
 import { listTransactions } from "@/repositories/transactions";
 import { listValuations } from "@/repositories/valuations";
