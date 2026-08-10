@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { BulkValuationDialog } from "@/components/performance/bulk-valuation-dialog";
+import { NewTransactionDialog } from "@/components/transactions/new-transaction-dialog";
 import { cn } from "@/lib/utils";
 
 /**
@@ -70,6 +71,7 @@ export function PortfolioPerformanceSummary({
 
   const qc = useQueryClient();
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [txOpen, setTxOpen] = useState(false);
   const transactionsByAssetId: Record<string, Transaction[]> = Object.fromEntries(
     assets.map((a, i) => [a.id, txQueries[i]?.data ?? []]),
   );
