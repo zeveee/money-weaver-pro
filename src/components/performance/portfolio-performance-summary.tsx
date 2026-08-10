@@ -383,7 +383,15 @@ function AssetBreakdown({
                       const fx = p.fxEffect?.total ?? p.fxEffect?.realized ?? null;
                       return (
                         <tr key={asset.id} className="border-b last:border-0">
-                          <td className="px-3 py-2">{asset.name}</td>
+                          <td className="px-3 py-2">
+                            <Link
+                              to="/app/asset/$assetId"
+                              params={{ assetId: asset.id }}
+                              className="hover:underline"
+                            >
+                              {asset.name}
+                            </Link>
+                          </td>
                           <td className="px-3 py-2 text-right tabular-nums">
                             {formatCurrency(p.reported.investedCapital, currency)}
                           </td>
