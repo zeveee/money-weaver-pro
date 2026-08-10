@@ -324,13 +324,19 @@ function AssetBreakdown({
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const groups = buildGroups(perf.perAsset, assets);
-  if (groups.length === 0) return null;
+  const grouped = new Set(groups.flatMap((g) => g.rows.map((r) => r.asset.id)));
+  const idleAssets = assets
+    .filter((a) => !grouped.has(a.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (groups.length === 0 && idleAssets.length === 0) return null;
 
   const currency = perf.currency;
 
   return (
     <div className="space-y-2 border-t pt-3">
-      <p className="text-xs font-medium text-muted-foreground">Detalhe por tipo de ativo</p>
+      {groups.length > 0 && (
+        <p className="text-xs font-medium text-muted-foreground">Detalhe por tipo de ativo</p>
+      )}
       {groups.map((g) => {
         const open = !!expanded[g.type];
         return (
