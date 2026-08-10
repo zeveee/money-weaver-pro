@@ -34,6 +34,7 @@ export function BulkValuationDialog({
 }) {
   const [valuationDate, setValuationDate] = useState(today());
   const [values, setValues] = useState<Record<string, string>>({});
+  const [manualOverride, setManualOverride] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
   const rows = useMemo(
