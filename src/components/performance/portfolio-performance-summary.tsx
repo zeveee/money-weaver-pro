@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useQueries } from "@tanstack/react-query";
-import type { Asset } from "@/domain/types";
-import { isUnitBased } from "@/domain/asset-profiles";
+import { ChevronRight } from "lucide-react";
+import type { Asset, AssetType } from "@/domain/types";
+import { isUnitBased, ASSET_PROFILES } from "@/domain/asset-profiles";
 import { listTransactions } from "@/repositories/transactions";
 import { listValuations } from "@/repositories/valuations";
 import { useFxTable } from "@/hooks/use-fx-table";
