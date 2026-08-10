@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQueries } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import type { Asset, AssetType } from "@/domain/types";
 import { isUnitBased, ASSET_PROFILES } from "@/domain/asset-profiles";
