@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { ChevronRight } from "lucide-react";
 import { PortfolioPerformanceSummary } from "@/components/performance/portfolio-performance-summary";
+import { PortfolioCompositionCard } from "@/components/performance/portfolio-composition-card";
+
 
 export const Route = createFileRoute("/_authenticated/app/portfolio/$portfolioId")({
   component: PortfolioDetailPage,
@@ -96,6 +98,9 @@ function PortfolioDetailPage() {
         baseCurrency={portfolio.baseCurrency}
         loadingAssets={loadingAssets}
       />
+
+      <PortfolioCompositionCard assets={assets} baseCurrency={portfolio.baseCurrency} />
+
     </div>
   );
 }
