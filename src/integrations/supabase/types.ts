@@ -209,6 +209,62 @@ export type Database = {
           },
         ]
       }
+      asset_provider_links: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          last_synced_date: string | null
+          last_verified_at: string | null
+          provider: string
+          provider_currency: string | null
+          provider_exchange: string | null
+          provider_instrument_id: string
+          provider_symbol: string | null
+          raw_metadata: Json | null
+          resolved_at: string
+          status: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          last_synced_date?: string | null
+          last_verified_at?: string | null
+          provider: string
+          provider_currency?: string | null
+          provider_exchange?: string | null
+          provider_instrument_id: string
+          provider_symbol?: string | null
+          raw_metadata?: Json | null
+          resolved_at?: string
+          status?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          last_synced_date?: string | null
+          last_verified_at?: string | null
+          provider?: string
+          provider_currency?: string | null
+          provider_exchange?: string | null
+          provider_instrument_id?: string
+          provider_symbol?: string | null
+          raw_metadata?: Json | null
+          resolved_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_provider_links_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_types: {
         Row: {
           code: string
