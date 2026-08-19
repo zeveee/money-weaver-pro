@@ -24,7 +24,7 @@ export const resolveProviderForAsset = createServerFn({ method: "POST" })
 
     const { data: asset, error } = await context.supabase
       .from("assets")
-      .select("id, isin")
+      .select("id, isin, ticker, currency")
       .eq("id", data.assetId)
       .maybeSingle();
 
