@@ -88,6 +88,7 @@ export async function resolveAssetProvider(
   db: Db,
   assetId: string,
   isin: string,
+  hints?: IdentityHints,
 ): Promise<ResolveOutcome> {
   const candidates = CAPABILITY_PROVIDERS.pricing.filter((p) => p.identity);
   if (candidates.length === 0) {
