@@ -480,14 +480,21 @@ function AssetBreakdown({
                       return (
                         <tr key={asset.id} className="border-b last:border-0">
                           <td className="px-3 py-2">
-                            <Link
-                              to="/app/asset/$assetId"
-                              params={{ assetId: asset.id }}
-                              className="hover:underline"
-                            >
-                              {asset.name}
-                            </Link>
+                            <span className="flex items-center gap-2">
+                              <ProviderStatusDot
+                                isin={asset.isin}
+                                linkStatus={providerStatusByAssetId[asset.id] ?? "none"}
+                              />
+                              <Link
+                                to="/app/asset/$assetId"
+                                params={{ assetId: asset.id }}
+                                className="hover:underline"
+                              >
+                                {asset.name}
+                              </Link>
+                            </span>
                           </td>
+
                           <td className="px-3 py-2 text-right tabular-nums">
                             {formatCurrency(p.reported.investedCapital, currency)}
                           </td>
