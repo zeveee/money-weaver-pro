@@ -15,6 +15,7 @@ import {
   providerFail,
   providerOk,
   type HistoricalRange,
+  type IdentityHints,
   type MarketDataProvider,
   type PricePoint,
   type ProviderResult,
