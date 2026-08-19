@@ -75,12 +75,31 @@ export function PortfolioPerformanceSummary({
     })),
   });
 
+  const assetIds = assets.map((a) => a.id);
+  const { data: providerLinks } = useQuery({
+    queryKey: ["asset-provider-links", assetIds],
+    queryFn: () => listByAssetIds(assetIds),
+    enabled: assetIds.length > 0,
+  });
+  const providerStatusByAssetId: Record<string, ProviderLinkStatus> = Object.fromEntries(
+    assetIds.map((id) => {
+      const rows = (providerLinks ?? []).filter((l) => l.assetId === id);
+      const status: ProviderLinkStatus = rows.some((l) => l.status === "active")
+        ? "active"
+        : rows.some((l) => l.status === "not_found")
+          ? "not_found"
+          : "none";
+      return [id, status];
+    }),
+  );
+
   const qc = useQueryClient();
   const [bulkOpen, setBulkOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
   const transactionsByAssetId: Record<string, Transaction[]> = Object.fromEntries(
     assets.map((a, i) => [a.id, txQueries[i]?.data ?? []]),
   );
+
 
   return (
     <Card>
