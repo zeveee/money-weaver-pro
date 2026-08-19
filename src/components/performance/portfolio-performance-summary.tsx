@@ -154,7 +154,12 @@ export function PortfolioPerformanceSummary({
             <p className="text-sm text-muted-foreground">
               Sem transações registadas nesta carteira — ainda não há performance a apresentar.
             </p>
-            <AssetBreakdown perf={perf} assets={assets} />
+            <AssetBreakdown
+              perf={perf}
+              assets={assets}
+              providerStatusByAssetId={providerStatusByAssetId}
+            />
+
           </>
         ) : (
           <>
@@ -237,7 +242,12 @@ export function PortfolioPerformanceSummary({
 
             <Notes perf={perf} />
 
-            <AssetBreakdown perf={perf} assets={assets} />
+            <AssetBreakdown
+              perf={perf}
+              assets={assets}
+              providerStatusByAssetId={providerStatusByAssetId}
+            />
+
           </>
         )}
       </CardContent>
