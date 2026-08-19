@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import type { Asset, AssetType, Transaction } from "@/domain/types";
 import { isUnitBased, ASSET_PROFILES } from "@/domain/asset-profiles";
 import { listTransactions } from "@/repositories/transactions";
 import { listValuations } from "@/repositories/valuations";
+import { listByAssetIds } from "@/repositories/asset-provider-links";
 import { useFxTable } from "@/hooks/use-fx-table";
 import { portfolioPerformance } from "@/services/portfolio-performance";
 import { formatCurrency, formatPercent } from "@/lib/number-format";
@@ -15,7 +16,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { BulkValuationDialog } from "@/components/performance/bulk-valuation-dialog";
 import { NewTransactionDialog } from "@/components/transactions/new-transaction-dialog";
+import {
+  ProviderStatusDot,
+  type ProviderLinkStatus,
+} from "@/components/assets/provider-status-dot";
 import { cn } from "@/lib/utils";
+
 
 /**
  * Resumo agregado da carteira. Toda a lógica vive em
