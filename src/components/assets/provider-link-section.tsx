@@ -295,7 +295,13 @@ export function ProviderLinkSection({ assetId, isin }: Props) {
                 {syncing === "historical" ? "A recarregar…" : "Recarregar histórico"}
               </Button>
 
-              <AlertDialog>
+              <AlertDialog
+                open={deleteOpen}
+                onOpenChange={(o) => {
+                  setDeleteOpen(o);
+                  if (!o) setAfterReassociate(false);
+                }}
+              >
                 <AlertDialogTrigger asChild>
                   <Button size="sm" variant="destructive" disabled={busy}>
                     {deleteValuationsM.isPending ? "A eliminar…" : "Eliminar valorizações deste fornecedor"}
