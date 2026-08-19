@@ -92,15 +92,25 @@ async function searchInstruments(query: string): Promise<ProviderResult<Resolved
   return providerOk(rows);
 }
 
-async function resolveByIsin(isin: string): Promise<ProviderResult<ResolvedInstrument>> {
+async function resolveByIsin(
+  isin: string,
+  hints?: IdentityHints,
+): Promise<ProviderResult<ResolvedInstrument>> {
   const res = await searchInstruments(isin);
   if (!res.ok) return res;
 
   const wanted = isin.trim().toUpperCase();
-  // Preferimos a correspondência exata de ISIN; caso contrário, o primeiro
-  // resultado (a EODHD ordena por relevância).
+  const sameIsin = res.data.filter((i) => (i.isin ?? "").toUpperCase() === wanted);
+  const pool = sameIsin.length > 0 ? sameIsin : res.data;
+
+  const ticker = hints?.ticker?.trim().toUpperCase();
+  const currency = hints?.currency?.trim().toUpperCase();
+
+  // Desambiguação de listings cross-listed: ticker exato > moeda > fallback.
   const match =
-    res.data.find((i) => (i.isin ?? "").toUpperCase() === wanted) ?? res.data[0];
+    (ticker ? pool.find((i) => (i.symbol ?? "").toUpperCase() === ticker) : undefined) ??
+    (currency ? pool.find((i) => (i.currency ?? "").toUpperCase() === currency) : undefined) ??
+    pool[0];
 
   return match
     ? providerOk(match)
