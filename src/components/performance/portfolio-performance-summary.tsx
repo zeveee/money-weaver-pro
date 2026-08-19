@@ -529,13 +529,20 @@ function AssetBreakdown({
           <ul className="divide-y rounded-lg border">
             {idleAssets.map((asset) => (
               <li key={asset.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                <Link
-                  to="/app/asset/$assetId"
-                  params={{ assetId: asset.id }}
-                  className="text-sm hover:underline"
-                >
-                  {asset.name}
-                </Link>
+                <span className="flex items-center gap-2">
+                  <ProviderStatusDot
+                    isin={asset.isin}
+                    linkStatus={providerStatusByAssetId[asset.id] ?? "none"}
+                  />
+                  <Link
+                    to="/app/asset/$assetId"
+                    params={{ assetId: asset.id }}
+                    className="text-sm hover:underline"
+                  >
+                    {asset.name}
+                  </Link>
+                </span>
+
                 <Badge variant="secondary">
                   {ASSET_PROFILES[asset.type]?.label ?? asset.type}
                 </Badge>
