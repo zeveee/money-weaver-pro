@@ -140,12 +140,55 @@ export function ProviderLinkSection({ assetId, isin }: Props) {
     mutationFn: () => deleteValuationsBySource(assetId, link!.provider),
     onSuccess: (count) => {
       toast.success(`${count} valorizações eliminadas`);
+      if (afterReassociate) {
+        toast("Corre «Recarregar histórico» para reimportar os preços corretos.");
+      }
+      setAfterReassociate(false);
+      setDeleteOpen(false);
       invalidateAll();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const busy = syncing !== null || saveInstrumentM.isPending || deleteValuationsM.isPending;
+  /** Volta a correr a resolução automática para um ativo já ligado. */
+  const reassociateM = useMutation({
+    mutationFn: async () => {
+      const previous = link?.provider_instrument_id ?? null;
+      const res = await resolveProviderForAsset({ data: { assetId } });
+      return { res, previous };
+    },
+    onSuccess: ({ res, previous }) => {
+      if (res.status === "linked") {
+        const raw = res.link as unknown as Record<string, unknown>;
+        const next =
+          (raw?.["providerInstrumentId"] as string | null | undefined) ??
+          (raw?.["provider_instrument_id"] as string | null | undefined) ??
+          null;
+        qc.invalidateQueries({ queryKey: linkQueryKey });
+        if (next === previous) {
+          toast("Já estava associado ao instrumento correto");
+          return;
+        }
+        toast.warning(
+          `Identificador mudou de ${previous ?? "—"} para ${next ?? "—"}. As valorizações antigas podem estar na moeda/escala erradas.`,
+        );
+        setAfterReassociate(true);
+        setDeleteOpen(true);
+      } else if (res.status === "not_found") {
+        toast.warning(res.message);
+        qc.invalidateQueries({ queryKey: linkQueryKey });
+      } else {
+        toast.error(res.message);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const busy =
+    syncing !== null ||
+    saveInstrumentM.isPending ||
+    deleteValuationsM.isPending ||
+    reassociateM.isPending;
 
   return (
     <Card>
