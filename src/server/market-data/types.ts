@@ -162,7 +162,8 @@ export interface AssetProviderLink {
   id: UUID;
   assetId: UUID;
   provider: string;
-  providerInstrumentId: string;
+  /** `null` quando a tentativa de resolução falhou (status "not_found"). */
+  providerInstrumentId: string | null;
   providerSymbol: string | null;
   providerExchange: string | null;
   providerCurrency: string | null;
