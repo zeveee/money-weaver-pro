@@ -95,8 +95,17 @@ export interface HistoricalRange {
 
 // ---------- Capacidades ----------
 
+/** Pistas do ativo para desambiguar listings com o mesmo ISIN. */
+export interface IdentityHints {
+  ticker?: string | null;
+  currency?: string | null;
+}
+
 export interface IdentityCapability {
-  resolveByIsin(isin: string): Promise<ProviderResult<ResolvedInstrument>>;
+  resolveByIsin(
+    isin: string,
+    hints?: IdentityHints,
+  ): Promise<ProviderResult<ResolvedInstrument>>;
 }
 
 export interface PricingCapability {
