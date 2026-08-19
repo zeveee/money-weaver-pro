@@ -78,3 +78,23 @@ export async function deleteValuation(id: string): Promise<void> {
   const { error } = await supabase.from("asset_valuations").delete().eq("id", id);
   if (error) throw error;
 }
+
+/**
+ * Elimina apenas as valorizações AUTOMÁTICAS de um fornecedor para um ativo.
+ * O filtro `is_manual = false` protege valorizações introduzidas à mão que por
+ * acaso tenham o mesmo texto em `source`. Devolve o número de linhas apagadas.
+ */
+export async function deleteValuationsBySource(
+  assetId: string,
+  source: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("asset_valuations")
+    .delete()
+    .eq("asset_id", assetId)
+    .eq("source", source)
+    .eq("is_manual", false)
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length;
+}
