@@ -51,6 +51,7 @@ export function ProviderLinkSection({ assetId, isin }: Props) {
   const [editing, setEditing] = useState(false);
   const [instrumentId, setInstrumentId] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [afterReassociate, setAfterReassociate] = useState(false);
 
   const linkQueryKey = ["asset-provider-link", assetId];
 
