@@ -15,7 +15,7 @@ const toLink = (r: Row): AssetProviderLink => ({
   id: r["id"] as string,
   assetId: r["asset_id"] as string,
   provider: r["provider"] as string,
-  providerInstrumentId: r["provider_instrument_id"] as string,
+  providerInstrumentId: (r["provider_instrument_id"] as string | null) ?? null,
   providerSymbol: (r["provider_symbol"] as string) ?? null,
   providerExchange: (r["provider_exchange"] as string) ?? null,
   providerCurrency: (r["provider_currency"] as string) ?? null,
