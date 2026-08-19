@@ -396,9 +396,11 @@ function signedTone(value: number | null | undefined) {
 function AssetBreakdown({
   perf,
   assets,
+  providerStatusByAssetId,
 }: {
   perf: ReturnType<typeof portfolioPerformance>;
   assets: Asset[];
+  providerStatusByAssetId: Record<string, ProviderLinkStatus>;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const groups = buildGroups(perf.perAsset, assets);
