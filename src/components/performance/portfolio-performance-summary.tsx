@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import type { Asset, AssetType, Transaction } from "@/domain/types";
 import { isUnitBased, ASSET_PROFILES } from "@/domain/asset-profiles";
 import { listTransactions } from "@/repositories/transactions";
 import { listValuations } from "@/repositories/valuations";
+import { listByAssetIds } from "@/repositories/asset-provider-links";
 import { useFxTable } from "@/hooks/use-fx-table";
 import { portfolioPerformance } from "@/services/portfolio-performance";
 import { formatCurrency, formatPercent } from "@/lib/number-format";
@@ -15,7 +16,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { BulkValuationDialog } from "@/components/performance/bulk-valuation-dialog";
 import { NewTransactionDialog } from "@/components/transactions/new-transaction-dialog";
+import {
+  ProviderStatusDot,
+  type ProviderLinkStatus,
+} from "@/components/assets/provider-status-dot";
 import { cn } from "@/lib/utils";
+
 
 /**
  * Resumo agregado da carteira. Toda a lógica vive em
@@ -69,12 +75,31 @@ export function PortfolioPerformanceSummary({
     })),
   });
 
+  const assetIds = assets.map((a) => a.id);
+  const { data: providerLinks } = useQuery({
+    queryKey: ["asset-provider-links", assetIds],
+    queryFn: () => listByAssetIds(assetIds),
+    enabled: assetIds.length > 0,
+  });
+  const providerStatusByAssetId: Record<string, ProviderLinkStatus> = Object.fromEntries(
+    assetIds.map((id) => {
+      const rows = (providerLinks ?? []).filter((l) => l.assetId === id);
+      const status: ProviderLinkStatus = rows.some((l) => l.status === "active")
+        ? "active"
+        : rows.some((l) => l.status === "not_found")
+          ? "not_found"
+          : "none";
+      return [id, status];
+    }),
+  );
+
   const qc = useQueryClient();
   const [bulkOpen, setBulkOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
   const transactionsByAssetId: Record<string, Transaction[]> = Object.fromEntries(
     assets.map((a, i) => [a.id, txQueries[i]?.data ?? []]),
   );
+
 
   return (
     <Card>
@@ -129,7 +154,12 @@ export function PortfolioPerformanceSummary({
             <p className="text-sm text-muted-foreground">
               Sem transações registadas nesta carteira — ainda não há performance a apresentar.
             </p>
-            <AssetBreakdown perf={perf} assets={assets} />
+            <AssetBreakdown
+              perf={perf}
+              assets={assets}
+              providerStatusByAssetId={providerStatusByAssetId}
+            />
+
           </>
         ) : (
           <>
@@ -212,7 +242,12 @@ export function PortfolioPerformanceSummary({
 
             <Notes perf={perf} />
 
-            <AssetBreakdown perf={perf} assets={assets} />
+            <AssetBreakdown
+              perf={perf}
+              assets={assets}
+              providerStatusByAssetId={providerStatusByAssetId}
+            />
+
           </>
         )}
       </CardContent>
@@ -371,9 +406,11 @@ function signedTone(value: number | null | undefined) {
 function AssetBreakdown({
   perf,
   assets,
+  providerStatusByAssetId,
 }: {
   perf: ReturnType<typeof portfolioPerformance>;
   assets: Asset[];
+  providerStatusByAssetId: Record<string, ProviderLinkStatus>;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const groups = buildGroups(perf.perAsset, assets);
@@ -443,14 +480,21 @@ function AssetBreakdown({
                       return (
                         <tr key={asset.id} className="border-b last:border-0">
                           <td className="px-3 py-2">
-                            <Link
-                              to="/app/asset/$assetId"
-                              params={{ assetId: asset.id }}
-                              className="hover:underline"
-                            >
-                              {asset.name}
-                            </Link>
+                            <span className="flex items-center gap-2">
+                              <ProviderStatusDot
+                                isin={asset.isin}
+                                linkStatus={providerStatusByAssetId[asset.id] ?? "none"}
+                              />
+                              <Link
+                                to="/app/asset/$assetId"
+                                params={{ assetId: asset.id }}
+                                className="hover:underline"
+                              >
+                                {asset.name}
+                              </Link>
+                            </span>
                           </td>
+
                           <td className="px-3 py-2 text-right tabular-nums">
                             {formatCurrency(p.reported.investedCapital, currency)}
                           </td>
@@ -504,13 +548,20 @@ function AssetBreakdown({
           <ul className="divide-y rounded-lg border">
             {idleAssets.map((asset) => (
               <li key={asset.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                <Link
-                  to="/app/asset/$assetId"
-                  params={{ assetId: asset.id }}
-                  className="text-sm hover:underline"
-                >
-                  {asset.name}
-                </Link>
+                <span className="flex items-center gap-2">
+                  <ProviderStatusDot
+                    isin={asset.isin}
+                    linkStatus={providerStatusByAssetId[asset.id] ?? "none"}
+                  />
+                  <Link
+                    to="/app/asset/$assetId"
+                    params={{ assetId: asset.id }}
+                    className="text-sm hover:underline"
+                  >
+                    {asset.name}
+                  </Link>
+                </span>
+
                 <Badge variant="secondary">
                   {ASSET_PROFILES[asset.type]?.label ?? asset.type}
                 </Badge>

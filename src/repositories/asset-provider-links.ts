@@ -36,9 +36,7 @@ export async function getAssetProviderLink(assetId: string): Promise<AssetProvid
   return data ? toLink(data as Row) : null;
 }
 
-export async function listPortfolioProviderLinks(
-  assetIds: string[],
-): Promise<AssetProviderLink[]> {
+export async function listByAssetIds(assetIds: string[]): Promise<AssetProviderLink[]> {
   if (assetIds.length === 0) return [];
   const { data, error } = await supabase
     .from("asset_provider_links")
@@ -47,3 +45,10 @@ export async function listPortfolioProviderLinks(
   if (error) throw error;
   return (data ?? []).map((r) => toLink(r as Row));
 }
+
+export async function listPortfolioProviderLinks(
+  assetIds: string[],
+): Promise<AssetProviderLink[]> {
+  return listByAssetIds(assetIds);
+}
+
