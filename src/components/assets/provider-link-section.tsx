@@ -232,6 +232,14 @@ export function ProviderLinkSection({ assetId, isin }: Props) {
                   Editar associação
                 </button>
               )}
+              <button
+                type="button"
+                className="text-xs text-primary underline underline-offset-2 disabled:opacity-50"
+                disabled={busy}
+                onClick={() => reassociateM.mutate()}
+              >
+                {reassociateM.isPending ? "A reassociar…" : "Reassociar automaticamente"}
+              </button>
             </div>
 
             {editing && (
