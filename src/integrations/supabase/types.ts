@@ -219,7 +219,7 @@ export type Database = {
           provider: string
           provider_currency: string | null
           provider_exchange: string | null
-          provider_instrument_id: string
+          provider_instrument_id: string | null
           provider_symbol: string | null
           raw_metadata: Json | null
           resolved_at: string
@@ -234,7 +234,7 @@ export type Database = {
           provider: string
           provider_currency?: string | null
           provider_exchange?: string | null
-          provider_instrument_id: string
+          provider_instrument_id?: string | null
           provider_symbol?: string | null
           raw_metadata?: Json | null
           resolved_at?: string
@@ -249,7 +249,7 @@ export type Database = {
           provider?: string
           provider_currency?: string | null
           provider_exchange?: string | null
-          provider_instrument_id?: string
+          provider_instrument_id?: string | null
           provider_symbol?: string | null
           raw_metadata?: Json | null
           resolved_at?: string
