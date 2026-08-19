@@ -95,8 +95,17 @@ export interface HistoricalRange {
 
 // ---------- Capacidades ----------
 
+/** Pistas do ativo para desambiguar listings com o mesmo ISIN. */
+export interface IdentityHints {
+  ticker?: string | null;
+  currency?: string | null;
+}
+
 export interface IdentityCapability {
-  resolveByIsin(isin: string): Promise<ProviderResult<ResolvedInstrument>>;
+  resolveByIsin(
+    isin: string,
+    hints?: IdentityHints,
+  ): Promise<ProviderResult<ResolvedInstrument>>;
 }
 
 export interface PricingCapability {
@@ -153,7 +162,8 @@ export interface AssetProviderLink {
   id: UUID;
   assetId: UUID;
   provider: string;
-  providerInstrumentId: string;
+  /** `null` quando a tentativa de resolução falhou (status "not_found"). */
+  providerInstrumentId: string | null;
   providerSymbol: string | null;
   providerExchange: string | null;
   providerCurrency: string | null;

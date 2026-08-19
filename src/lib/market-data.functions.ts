@@ -24,7 +24,7 @@ export const resolveProviderForAsset = createServerFn({ method: "POST" })
 
     const { data: asset, error } = await context.supabase
       .from("assets")
-      .select("id, isin")
+      .select("id, isin, ticker, currency")
       .eq("id", data.assetId)
       .maybeSingle();
 
@@ -34,7 +34,10 @@ export const resolveProviderForAsset = createServerFn({ method: "POST" })
       return { status: "no_isin" as const, message: "O ativo não tem ISIN preenchido." };
     }
 
-    return resolveAssetProvider(context.supabase, asset.id, asset.isin);
+    return resolveAssetProvider(context.supabase, asset.id, asset.isin, {
+      ticker: asset.ticker,
+      currency: asset.currency,
+    });
   });
 
 /** Sincroniza preços do ativo: histórico completo ou apenas o último fecho. */

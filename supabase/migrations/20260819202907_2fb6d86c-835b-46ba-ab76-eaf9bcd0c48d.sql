@@ -1,0 +1,1 @@
+ALTER TABLE public.asset_provider_links ALTER COLUMN provider_instrument_id DROP NOT NULL;

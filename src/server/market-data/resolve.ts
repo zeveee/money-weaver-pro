@@ -16,6 +16,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { eodhdProvider } from "./providers/eodhd";
 import type {
   AssetProviderLink,
+  IdentityHints,
   MarketDataProvider,
   PricePoint,
   ProviderFailureReason,
@@ -88,6 +89,7 @@ export async function resolveAssetProvider(
   db: Db,
   assetId: string,
   isin: string,
+  hints?: IdentityHints,
 ): Promise<ResolveOutcome> {
   const candidates = CAPABILITY_PROVIDERS.pricing.filter((p) => p.identity);
   if (candidates.length === 0) {
@@ -95,9 +97,11 @@ export async function resolveAssetProvider(
   }
 
   let lastFailure: { reason: ProviderFailureReason; message: string } | null = null;
+  let lastProviderName: string | null = null;
 
   for (const provider of candidates) {
-    const res = await provider.identity!.resolveByIsin(isin);
+    lastProviderName = provider.name;
+    const res = await provider.identity!.resolveByIsin(isin, hints);
     if (!res.ok) {
       lastFailure = { reason: res.reason, message: res.message };
       continue;
@@ -131,6 +135,24 @@ export async function resolveAssetProvider(
   if (lastFailure && lastFailure.reason !== "not_found") {
     return { status: "error", ...lastFailure };
   }
+
+  // Registamos a tentativa falhada para distinguir "nunca tentado" de
+  // "tentado e não encontrado" (o semáforo da carteira lê este estado).
+  if (lastProviderName) {
+    const now = new Date().toISOString();
+    await db.from("asset_provider_links").upsert(
+      {
+        asset_id: assetId,
+        provider: lastProviderName,
+        provider_instrument_id: null,
+        status: "not_found",
+        resolved_at: now,
+        last_verified_at: now,
+      },
+      { onConflict: "asset_id,provider" },
+    );
+  }
+
   return { status: "not_found", message: lastFailure?.message ?? `No provider resolved ISIN ${isin}` };
 }
 
@@ -201,6 +223,27 @@ async function earliestTransactionDate(db: Db, assetId: string): Promise<string 
   return first ? first.slice(0, 10) : null;
 }
 
+/**
+ * Cursor real: última valorização automática deste fornecedor efetivamente
+ * presente em `asset_valuations`. Evita divergir de `last_synced_date` quando
+ * as valorizações são apagadas.
+ */
+async function latestAutoValuationDate(
+  db: Db,
+  assetId: string,
+  provider: string,
+): Promise<string | null> {
+  const { data } = await db
+    .from("asset_valuations")
+    .select("valuation_date")
+    .eq("asset_id", assetId)
+    .eq("source", provider)
+    .eq("is_manual", false)
+    .order("valuation_date", { ascending: false })
+    .limit(1);
+  return (data?.[0]?.valuation_date as string | undefined) ?? null;
+}
+
 async function markSync(
   db: Db,
   link: AssetProviderLink,
@@ -222,6 +265,10 @@ export async function syncLatestPrice(db: Db, link: AssetProviderLink): Promise<
   const provider = byName(link.provider);
   if (!provider?.pricing) {
     return { status: "error", reason: "invalid_response", message: `Provider ${link.provider} has no pricing capability` };
+  }
+
+  if (!link.providerInstrumentId) {
+    return { status: "not_found", message: "A ligação não tem identificador de instrumento." };
   }
 
   const res = await provider.pricing.getLatestPrice(link.providerInstrumentId);
@@ -253,11 +300,16 @@ export async function syncHistoricalPrices(db: Db, link: AssetProviderLink): Pro
     return { status: "error", reason: "invalid_response", message: `Provider ${link.provider} has no historicalPricing capability` };
   }
 
+  if (!link.providerInstrumentId) {
+    return { status: "not_found", message: "A ligação não tem identificador de instrumento." };
+  }
+
   const to = today();
   // Cursor: continua onde ficou; na primeira vez, arranca na transação mais
   // antiga do ativo (histórico anterior não tem utilidade para a carteira).
-  const from = link.lastSyncedDate
-    ? nextDay(link.lastSyncedDate)
+  const latestStored = await latestAutoValuationDate(db, link.assetId, link.provider);
+  const from = latestStored
+    ? nextDay(latestStored)
     : ((await earliestTransactionDate(db, link.assetId)) ?? undefined);
 
   if (from && from > to) return { status: "up_to_date", provider: link.provider };
