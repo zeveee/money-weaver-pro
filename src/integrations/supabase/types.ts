@@ -899,6 +899,116 @@ export type Database = {
           },
         ]
       }
+      securities: {
+        Row: {
+          composite_figi: string | null
+          created_at: string
+          currency: string | null
+          cusip: string | null
+          exchange: string | null
+          figi: string | null
+          id: string
+          isin: string | null
+          market_sector: string | null
+          name: string | null
+          security_type: string | null
+          sedol: string | null
+          share_class_figi: string | null
+          source: string
+          source_payload: Json
+          ticker: string | null
+          updated_at: string
+        }
+        Insert: {
+          composite_figi?: string | null
+          created_at?: string
+          currency?: string | null
+          cusip?: string | null
+          exchange?: string | null
+          figi?: string | null
+          id?: string
+          isin?: string | null
+          market_sector?: string | null
+          name?: string | null
+          security_type?: string | null
+          sedol?: string | null
+          share_class_figi?: string | null
+          source?: string
+          source_payload?: Json
+          ticker?: string | null
+          updated_at?: string
+        }
+        Update: {
+          composite_figi?: string | null
+          created_at?: string
+          currency?: string | null
+          cusip?: string | null
+          exchange?: string | null
+          figi?: string | null
+          id?: string
+          isin?: string | null
+          market_sector?: string | null
+          name?: string | null
+          security_type?: string | null
+          sedol?: string | null
+          share_class_figi?: string | null
+          source?: string
+          source_payload?: Json
+          ticker?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      security_lookups: {
+        Row: {
+          candidate_count: number
+          created_at: string
+          id: string
+          id_type: string
+          id_value: string
+          lookup_key: string
+          message: string | null
+          security_id: string | null
+          source: string
+          status: Database["public"]["Enums"]["security_match_status"]
+          updated_at: string
+        }
+        Insert: {
+          candidate_count?: number
+          created_at?: string
+          id?: string
+          id_type: string
+          id_value: string
+          lookup_key: string
+          message?: string | null
+          security_id?: string | null
+          source?: string
+          status: Database["public"]["Enums"]["security_match_status"]
+          updated_at?: string
+        }
+        Update: {
+          candidate_count?: number
+          created_at?: string
+          id?: string
+          id_type?: string
+          id_value?: string
+          lookup_key?: string
+          message?: string | null
+          security_id?: string | null
+          source?: string
+          status?: Database["public"]["Enums"]["security_match_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_lookups_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -1049,6 +1159,7 @@ export type Database = {
         | "quarterly"
         | "semiannual"
         | "annual"
+      security_match_status: "identified" | "ambiguous" | "unidentified"
       transaction_type:
         | "buy"
         | "sell"
@@ -1247,6 +1358,7 @@ export const Constants = {
         "semiannual",
         "annual",
       ],
+      security_match_status: ["identified", "ambiguous", "unidentified"],
       transaction_type: [
         "buy",
         "sell",

@@ -20,9 +20,11 @@
 import { useQuery } from "@tanstack/react-query";
 import type { AllocationType, Asset } from "@/domain/types";
 import { getAssetHoldings } from "@/lib/holdings.functions";
+import { getAssetHoldingMatches } from "@/lib/securities.functions";
+import type { HoldingMatch } from "@/server/securities/types";
 import { listAllocationsForAssets } from "@/repositories/allocations";
 import { portfolioComposition } from "@/services/portfolio-composition";
-import { formatCurrency, formatPercent } from "@/lib/number-format";
+import { formatPercent } from "@/lib/number-format";
 import { formatDateLabel } from "@/lib/date-format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -78,12 +80,51 @@ function DistributionList({
   );
 }
 
+/** Estado da identificação de uma holding contra o Security Master global. */
+function MatchBadge({ match, loading }: { match?: HoldingMatch; loading: boolean }) {
+  if (!match) {
+    return (
+      <span className="text-xs text-muted-foreground">
+        {loading ? "A identificar…" : "—"}
+      </span>
+    );
+  }
+  if (match.status === "identified") {
+    return (
+      <Badge variant="secondary" title={match.security?.name ?? undefined}>
+        Identificada
+      </Badge>
+    );
+  }
+  if (match.status === "ambiguous") {
+    return (
+      <Badge variant="outline" title={match.message ?? undefined}>
+        Ambígua
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-muted-foreground" title={match.message ?? undefined}>
+      Não identificada
+    </Badge>
+  );
+}
+
 export function AssetCompositionSection({ asset }: { asset: Asset }) {
   const { data, isLoading } = useQuery({
     queryKey: ["asset-holdings", asset.id],
     queryFn: () => getAssetHoldings({ data: { assetId: asset.id } }),
     staleTime: 5 * 60 * 1000,
   });
+
+  // Identificação das holdings (Security Master + OpenFIGI), em segundo plano.
+  const { data: matchData, isLoading: matching } = useQuery({
+    queryKey: ["asset-holding-matches", asset.id],
+    queryFn: () => getAssetHoldingMatches({ data: { assetId: asset.id } }),
+    enabled: data?.status === "ok",
+    staleTime: 30 * 60 * 1000,
+  });
+  const matches = matchData?.status === "ok" ? matchData.matches : undefined;
 
   if (isLoading) {
     return (
@@ -161,7 +202,7 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
                     <th className="py-2 text-left font-medium">Holding</th>
                     <th className="py-2 text-left font-medium">Ticker</th>
                     <th className="py-2 text-right font-medium">Peso</th>
-                    <th className="py-2 text-right font-medium">Valor de mercado</th>
+                    <th className="py-2 pl-3 text-left font-medium">Identificação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -174,10 +215,8 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
                       <td className="py-2 text-right tabular-nums">
                         {h.weightPercent == null ? "—" : formatPercent(h.weightPercent / 100)}
                       </td>
-                      <td className="py-2 text-right tabular-nums">
-                        {h.marketValue == null
-                          ? "—"
-                          : formatCurrency(h.marketValue, h.currency ?? "USD")}
+                      <td className="py-2 pl-3">
+                        <MatchBadge match={matches?.[i]} loading={matching} />
                       </td>
                     </tr>
                   ))}
