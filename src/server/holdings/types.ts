@@ -16,8 +16,11 @@ import type { ProviderResult } from "../market-data/types";
 export interface FundIdentity {
   /** Identificador principal nesta fase. */
   ticker: string;
-  /** Emissor; determina o provider escolhido pelo registry. */
-  issuer: string;
+  /**
+   * Emissor; determina o provider escolhido pelo registry. Quando ausente, o
+   * registry tenta todos os providers (cada um valida o ticker na sua fonte).
+   */
+  issuer?: string | null;
   name?: string | null;
   isin?: string | null;
 }
