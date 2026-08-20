@@ -80,12 +80,51 @@ function DistributionList({
   );
 }
 
+/** Estado da identificação de uma holding contra o Security Master global. */
+function MatchBadge({ match, loading }: { match?: HoldingMatch; loading: boolean }) {
+  if (!match) {
+    return (
+      <span className="text-xs text-muted-foreground">
+        {loading ? "A identificar…" : "—"}
+      </span>
+    );
+  }
+  if (match.status === "identified") {
+    return (
+      <Badge variant="secondary" title={match.security?.name ?? undefined}>
+        Identificada
+      </Badge>
+    );
+  }
+  if (match.status === "ambiguous") {
+    return (
+      <Badge variant="outline" title={match.message ?? undefined}>
+        Ambígua
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-muted-foreground" title={match.message ?? undefined}>
+      Não identificada
+    </Badge>
+  );
+}
+
 export function AssetCompositionSection({ asset }: { asset: Asset }) {
   const { data, isLoading } = useQuery({
     queryKey: ["asset-holdings", asset.id],
     queryFn: () => getAssetHoldings({ data: { assetId: asset.id } }),
     staleTime: 5 * 60 * 1000,
   });
+
+  // Identificação das holdings (Security Master + OpenFIGI), em segundo plano.
+  const { data: matchData, isLoading: matching } = useQuery({
+    queryKey: ["asset-holding-matches", asset.id],
+    queryFn: () => getAssetHoldingMatches({ data: { assetId: asset.id } }),
+    enabled: data?.status === "ok",
+    staleTime: 30 * 60 * 1000,
+  });
+  const matches = matchData?.status === "ok" ? matchData.matches : undefined;
 
   if (isLoading) {
     return (
@@ -177,7 +216,7 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
                         {h.weightPercent == null ? "—" : formatPercent(h.weightPercent / 100)}
                       </td>
                       <td className="py-2 pl-3">
-                        <MatchBadge match={matchByKey?.get(holdingKey(h))} loading={matching} />
+                        <MatchBadge match={matches?.[i]} loading={matching} />
                       </td>
                     </tr>
                   ))}
