@@ -51,18 +51,38 @@ export async function getHoldings(
   fund: FundIdentity,
   options: GetHoldingsOptions = {},
 ): Promise<ProviderResult<HoldingsSnapshot>> {
-  const provider = providerForIssuer(fund.issuer);
-  if (!provider) {
+  /**
+   * Sem emissor conhecido, tentamos todos os providers: cada um valida o
+   * ticker contra a sua própria fonte antes de devolver dados, pelo que não
+   * há risco de atribuir a carteira de um emissor a outro.
+   */
+  const candidates = fund.issuer
+    ? [providerForIssuer(fund.issuer)].filter((p): p is HoldingsProvider => !!p)
+    : HOLDINGS_PROVIDERS;
+
+  if (candidates.length === 0) {
     return providerFail("not_found", `Sem holdings provider para o emissor "${fund.issuer}"`);
   }
 
-  const key = cacheKey(provider.name, fund.ticker);
-  const hit = cache.get(key);
-  if (!options.force && hit && hit.expiresAt > Date.now()) {
-    return { ok: true, data: hit.snapshot };
+  let last: ProviderResult<HoldingsSnapshot> = providerFail(
+    "not_found",
+    `Sem holdings para ${fund.ticker}`,
+  );
+
+  for (const provider of candidates) {
+    const key = cacheKey(provider.name, fund.ticker);
+    const hit = cache.get(key);
+    if (!options.force && hit && hit.expiresAt > Date.now()) {
+      return { ok: true, data: hit.snapshot };
+    }
+
+    const res = await provider.getHoldings(fund);
+    if (res.ok) {
+      cache.set(key, { expiresAt: Date.now() + TTL_MS, snapshot: res.data });
+      return res;
+    }
+    last = res;
   }
 
-  const res = await provider.getHoldings(fund);
-  if (res.ok) cache.set(key, { expiresAt: Date.now() + TTL_MS, snapshot: res.data });
-  return res;
+  return last;
 }

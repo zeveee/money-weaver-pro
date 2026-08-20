@@ -240,6 +240,9 @@ async function getHoldings(fund: FundIdentity): Promise<ProviderResult<HoldingsS
     fundIsin: meta.data.isin,
     asOfDate: latest.data.asOfDate,
     holdings,
+    // A Amplify publica a carteira completa (a mesma do CSV oficial).
+    coverage: "full",
+    totalHoldingsCount: holdings.length,
     sourceProvider: AMPLIFY_PROVIDER_NAME,
     sourceUrl: page.data,
     retrievedAt: new Date().toISOString(),

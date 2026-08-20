@@ -22,6 +22,7 @@ import { PerformanceSection } from "@/components/performance/performance-section
 import { listTransactions } from "@/repositories/transactions";
 import { formatDateLabel } from "@/lib/date-format";
 import { ProviderLinkSection } from "@/components/assets/provider-link-section";
+import { AssetCompositionSection } from "@/components/assets/asset-composition-section";
 
 
 export const Route = createFileRoute("/_authenticated/app/asset/$assetId")({
@@ -184,6 +185,8 @@ function AssetDetailPage() {
       </Card>
 
       <ProviderLinkSection assetId={asset.id} isin={asset.isin} />
+
+      <AssetCompositionSection asset={asset} />
 
       <PerformanceSection asset={asset} reportingCurrency={portfolio?.baseCurrency} />
 
