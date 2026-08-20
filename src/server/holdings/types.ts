@@ -34,13 +34,25 @@ export interface NormalizedHolding {
   currency: string | null;
 }
 
-/** Carteira completa + proveniência. */
+/**
+ * Cobertura da composição devolvida pela fonte.
+ * - `full`    — a fonte publica a carteira completa (ex.: Amplify).
+ * - `partial` — a fonte só publica um subconjunto (ex.: Top 10 de agregadores).
+ * - `unknown` — a fonte não permite determinar a cobertura.
+ */
+export type HoldingsCoverage = "full" | "partial" | "unknown";
+
+/** Carteira + proveniência. */
 export interface HoldingsSnapshot {
   fundTicker: string;
   fundName: string | null;
   fundIsin: string | null;
   asOfDate: ISODate;
   holdings: NormalizedHolding[];
+  /** Cobertura declarada pelo provider — a UI nunca a infere sozinha. */
+  coverage: HoldingsCoverage;
+  /** Quando `coverage === "partial"`, nº total de posições do fundo, se conhecido. */
+  totalHoldingsCount: number | null;
   sourceProvider: string;
   sourceUrl: string;
   retrievedAt: string;
