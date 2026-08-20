@@ -163,7 +163,7 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
                     <th className="py-2 text-left font-medium">Holding</th>
                     <th className="py-2 text-left font-medium">Ticker</th>
                     <th className="py-2 text-right font-medium">Peso</th>
-                    <th className="py-2 text-right font-medium">Valor de mercado</th>
+                    <th className="py-2 pl-3 text-left font-medium">Identificação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -176,10 +176,8 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
                       <td className="py-2 text-right tabular-nums">
                         {h.weightPercent == null ? "—" : formatPercent(h.weightPercent / 100)}
                       </td>
-                      <td className="py-2 text-right tabular-nums">
-                        {h.marketValue == null
-                          ? "—"
-                          : formatCurrency(h.marketValue, h.currency ?? "USD")}
+                      <td className="py-2 pl-3">
+                        <MatchBadge match={matchByKey?.get(holdingKey(h))} loading={matching} />
                       </td>
                     </tr>
                   ))}
