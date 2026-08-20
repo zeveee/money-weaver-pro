@@ -71,7 +71,7 @@ function DistributionList({
           <span className={s.isUnclassified ? "text-muted-foreground" : undefined}>
             {s.allocationName}
           </span>
-          <span className="tabular-nums">{formatPercent(s.percentage)}</span>
+          <span className="tabular-nums">{formatPercent(s.percentage / 100)}</span>
         </li>
       ))}
     </ul>
@@ -131,7 +131,7 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
         </div>
         <p className="text-xs text-muted-foreground">
           {snap.holdings.length} posições · a {formatDateLabel(snap.asOfDate)} · pesos somam{" "}
-          {formatPercent(totalWeight)} · fonte:{" "}
+          {formatPercent(totalWeight / 100)} · fonte:{" "}
           <a
             href={snap.sourceUrl}
             target="_blank"
@@ -172,7 +172,7 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
                         {h.holdingTicker ?? "—"}
                       </td>
                       <td className="py-2 text-right tabular-nums">
-                        {h.weightPercent == null ? "—" : formatPercent(h.weightPercent)}
+                        {h.weightPercent == null ? "—" : formatPercent(h.weightPercent / 100)}
                       </td>
                       <td className="py-2 text-right tabular-nums">
                         {h.marketValue == null
