@@ -24,7 +24,7 @@ import { getAssetHoldingMatches } from "@/lib/securities.functions";
 import type { HoldingMatch } from "@/server/securities/types";
 import { listAllocationsForAssets } from "@/repositories/allocations";
 import { portfolioComposition } from "@/services/portfolio-composition";
-import { formatCurrency, formatPercent } from "@/lib/number-format";
+import { formatPercent } from "@/lib/number-format";
 import { formatDateLabel } from "@/lib/date-format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
