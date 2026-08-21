@@ -21,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { AllocationType, Asset } from "@/domain/types";
 import { getAssetHoldings } from "@/lib/holdings.functions";
 import { getAssetHoldingMatches } from "@/lib/securities.functions";
+import { holdingKeyOf } from "@/lib/holding-key";
 import type { HoldingMatch } from "@/server/securities/types";
 import { listAllocationsForAssets } from "@/repositories/allocations";
 import { portfolioComposition } from "@/services/portfolio-composition";
