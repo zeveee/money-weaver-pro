@@ -260,15 +260,23 @@ export function createMemorySecurityStore(): SecurityStore {
       return next;
     },
     async saveLookup(input) {
-      lookups.set(lookupKey(input.idType, input.idValue), {
-        status: input.status,
-        security: input.securityId
-          ? ([...securities.values()].find((s) => s.id === input.securityId) ?? null)
-          : null,
-        candidateCount: input.candidateCount,
+      const key = lookupKey(input.idType, input.idValue);
+      const prev = lookups.get(key);
+      const merged = new Map<string, SecurityRecord>();
+      for (const s of prev?.candidates ?? []) merged.set(s.id, s);
+      for (const id of input.candidateIds) {
+        const found = [...securities.values()].find((s) => s.id === id);
+        if (found) merged.set(found.id, found);
+      }
+      const candidates = [...merged.values()];
+      lookups.set(key, {
+        status: candidates.length > 0 ? "identified" : "unidentified",
+        candidates,
+        candidateCount: candidates.length,
         source: input.source,
         message: input.message,
       });
     },
+
   };
 }
