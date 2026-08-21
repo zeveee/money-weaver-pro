@@ -37,11 +37,20 @@ export interface SecurityRecord {
   source: string;
 }
 
+/**
+ * Estado apresentável de uma holding. Acrescenta `pending` ao enum de base:
+ * a identificação ainda não foi tentada/concluída nesta passagem (orçamento
+ * de tempo esgotado ou falha transitória da fonte). NUNCA é gravado na base
+ * de dados — só existe em memória, para a UI não mostrar "não identificada"
+ * quando na verdade o trabalho ficou por fazer.
+ */
+export type HoldingMatchStatus = SecurityMatchStatus | "pending";
+
 /** Resultado do matching de UMA holding. */
 export interface HoldingMatch {
   /** Chave estável da holding dentro do snapshot (ticker/cusip/nome). */
   holdingKey: string;
-  status: SecurityMatchStatus;
+  status: HoldingMatchStatus;
   security: SecurityRecord | null;
   /** Identificador que produziu o resultado (null quando não houve nenhum utilizável). */
   matchedBy: SecurityIdType | null;
@@ -57,9 +66,16 @@ export interface HoldingsMatchSummary {
   identified: number;
   ambiguous: number;
   unidentified: number;
+  /** Holdings ainda por resolver nesta passagem. */
+  pending: number;
 }
 
 export interface HoldingsMatchResult {
   summary: HoldingsMatchSummary;
   matches: HoldingMatch[];
+  /** Identificadores que ficaram por consultar (orçamento de tempo / falha da fonte). */
+  pendingIdentifiers: number;
+  /** Última falha da fonte externa, se existiu. */
+  error: string | null;
 }
+
