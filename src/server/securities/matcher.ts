@@ -17,6 +17,7 @@
  */
 
 import type { NormalizedHolding } from "../holdings/types";
+import { holdingKeyOf } from "@/lib/holding-key";
 import { FIGI_BATCH_SIZE, figiMapping, type FigiCandidate, type FigiJob } from "./openfigi";
 import {
   createSupabaseSecurityStore,
