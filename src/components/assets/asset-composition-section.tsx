@@ -21,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { AllocationType, Asset } from "@/domain/types";
 import { getAssetHoldings } from "@/lib/holdings.functions";
 import { getAssetHoldingMatches } from "@/lib/securities.functions";
+import { holdingKeyOf } from "@/lib/holding-key";
 import type { HoldingMatch } from "@/server/securities/types";
 import { listAllocationsForAssets } from "@/repositories/allocations";
 import { portfolioComposition } from "@/services/portfolio-composition";
@@ -82,10 +83,10 @@ function DistributionList({
 
 /** Estado da identificação de uma holding contra o Security Master global. */
 function MatchBadge({ match, loading }: { match?: HoldingMatch; loading: boolean }) {
-  if (!match) {
+  if (!match || match.status === "pending") {
     return (
       <span className="text-xs text-muted-foreground">
-        {loading ? "A identificar…" : "—"}
+        {loading || match?.status === "pending" ? "A identificar…" : "—"}
       </span>
     );
   }
@@ -118,13 +119,43 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
   });
 
   // Identificação das holdings (Security Master + OpenFIGI), em segundo plano.
-  const { data: matchData, isLoading: matching } = useQuery({
+  // Cada passagem tem orçamento de tempo: enquanto houver pendentes e houver
+  // progresso, voltamos a pedir — a passagem seguinte arranca do Security
+  // Master, sem repetir chamadas externas.
+  const {
+    data: matchData,
+    isLoading: matching,
+    isFetching: matchFetching,
+    isError: matchFailed,
+    error: matchError,
+    refetch: refetchMatches,
+  } = useQuery({
     queryKey: ["asset-holding-matches", asset.id],
     queryFn: () => getAssetHoldingMatches({ data: { assetId: asset.id } }),
     enabled: data?.status === "ok",
     staleTime: 30 * 60 * 1000,
+    retry: false,
+    refetchIntervalInBackground: true,
+    refetchInterval: (q) => {
+      const r = q.state.data;
+      // Só continuamos enquanto houver pendentes E não houver erro da fonte.
+      return r && r.status === "ok" && r.pendingIdentifiers > 0 && !r.error ? 1_000 : false;
+    },
   });
-  const matches = matchData?.status === "ok" ? matchData.matches : undefined;
+
+  const matchesByKey =
+    matchData?.status === "ok"
+      ? new Map(matchData.matches.map((m) => [m.holdingKey, m]))
+      : undefined;
+  const matchProblem =
+    matchFailed
+      ? ((matchError as Error | null)?.message ?? "Falha ao contactar o servidor.")
+      : matchData && matchData.status !== "ok"
+        ? matchData.message
+        : matchData?.status === "ok" && matchData.error
+          ? matchData.error
+          : null;
+
 
   if (isLoading) {
     return (
@@ -182,7 +213,27 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
             {snap.sourceProvider}
           </a>
         </p>
+        {matchProblem ? (
+          <p className="text-xs text-destructive">
+            Identificação das holdings falhou: {matchProblem}{" "}
+            <button
+              type="button"
+              className="underline hover:no-underline"
+              onClick={() => void refetchMatches()}
+            >
+              Tentar novamente
+            </button>
+          </p>
+        ) : matchData?.status === "ok" ? (
+          <p className="text-xs text-muted-foreground">
+            Identificação: {matchData.summary.identified} identificadas ·{" "}
+            {matchData.summary.ambiguous} ambíguas · {matchData.summary.unidentified} não
+            identificadas
+            {matchData.summary.pending > 0 ? ` · ${matchData.summary.pending} a identificar…` : ""}
+          </p>
+        ) : null}
       </CardHeader>
+
       <CardContent>
         <Tabs defaultValue="holdings">
           <TabsList>
@@ -216,8 +267,12 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
                         {h.weightPercent == null ? "—" : formatPercent(h.weightPercent / 100)}
                       </td>
                       <td className="py-2 pl-3">
-                        <MatchBadge match={matches?.[i]} loading={matching} />
+                        <MatchBadge
+                          match={matchesByKey?.get(holdingKeyOf(h))}
+                          loading={matching || matchFetching}
+                        />
                       </td>
+
                     </tr>
                   ))}
                 </tbody>
