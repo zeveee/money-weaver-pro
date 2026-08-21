@@ -54,8 +54,8 @@ candidatos do identificador  ->  scoring por contexto  ->  decisão
 | Atributo | Papel |
 | --- | --- |
 | ISIN / CUSIP / SEDOL | Reduz o universo de candidatos. Nunca conclusivo por si só. |
-| Currency | Filtro duro quando conhecida dos dois lados. Foi o que falhou no WisdomTree. |
-| Exchange / exchCode | Filtro duro quando a holding a declara; caso contrário, preferência suave por linha primária. |
+| Currency | Sinal de contexto com peso alto no scoring. Foi o que faltou no WisdomTree. Nunca eliminatória por si só. |
+| Exchange / exchCode | Sinal de contexto quando a holding o declara; nunca elimina um candidato (a mesma security tem vários listings). |
 | Ticker | Sinal forte de desempate; fraco como identificador isolado (colide entre bolsas) — mantém-se como último recurso na fase de lookup. |
 | Nome | Desempate por semelhança normalizada; nunca decide sozinho. |
 | securityType / marketSector | Coerência (equity vs fund vs ETP); despenaliza/elimina candidatos de classe errada. |
