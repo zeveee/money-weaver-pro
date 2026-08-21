@@ -89,6 +89,12 @@ function candidateToSecurity(
     securityType: c.securityType,
     marketSector: c.marketSector,
     source: SOURCE,
+    // Classificação (setor/país) é preenchida noutra fase, sobre a security
+    // já identificada — o matching não a produz nem a apaga.
+    sector: null,
+    industry: null,
+    country: null,
+    classificationSource: null,
   };
 }
 
