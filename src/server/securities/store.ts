@@ -13,9 +13,16 @@
 
 import type { SecurityIdType, SecurityMatchStatus, SecurityRecord } from "./types";
 
+/**
+ * Memória de uma pesquisa: o CONJUNTO de candidatos que a fonte externa já
+ * devolveu para aquele identificador. Não é uma decisão — a decisão é tomada
+ * por holding, com o contexto, em `select.ts`.
+ */
 export interface LookupEntry {
+  /** `identified` ⇒ há candidatos conhecidos; `unidentified` ⇒ a fonte não devolveu nenhum. */
   status: SecurityMatchStatus;
-  security: SecurityRecord | null;
+  /** Conjunto acumulado de candidatos (união de todas as consultas anteriores). */
+  candidates: SecurityRecord[];
   candidateCount: number;
   source: string;
   message: string | null;
@@ -38,17 +45,19 @@ export interface SecurityStore {
     securityId: string,
     input: ClassificationInput,
   ): Promise<SecurityRecord>;
-  /** Regista o resultado de uma pesquisa. */
+  /**
+   * Regista o resultado de uma pesquisa, acrescentando (união) os candidatos
+   * encontrados aos que já eram conhecidos. Nunca substitui o conjunto.
+   */
   saveLookup(input: {
     idType: SecurityIdType;
     idValue: string;
-    status: SecurityMatchStatus;
-    securityId: string | null;
-    candidateCount: number;
+    candidateIds: string[];
     source: string;
     message: string | null;
   }): Promise<void>;
 }
+
 
 export const lookupKey = (idType: SecurityIdType, idValue: string) =>
   `${idType}:${idValue.trim().toUpperCase()}`;
