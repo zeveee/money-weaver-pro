@@ -901,16 +901,21 @@ export type Database = {
       }
       securities: {
         Row: {
+          classification_source: string | null
+          classified_at: string | null
           composite_figi: string | null
+          country: string | null
           created_at: string
           currency: string | null
           cusip: string | null
           exchange: string | null
           figi: string | null
           id: string
+          industry: string | null
           isin: string | null
           market_sector: string | null
           name: string | null
+          sector: string | null
           security_type: string | null
           sedol: string | null
           share_class_figi: string | null
@@ -920,16 +925,21 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          classification_source?: string | null
+          classified_at?: string | null
           composite_figi?: string | null
+          country?: string | null
           created_at?: string
           currency?: string | null
           cusip?: string | null
           exchange?: string | null
           figi?: string | null
           id?: string
+          industry?: string | null
           isin?: string | null
           market_sector?: string | null
           name?: string | null
+          sector?: string | null
           security_type?: string | null
           sedol?: string | null
           share_class_figi?: string | null
@@ -939,16 +949,21 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          classification_source?: string | null
+          classified_at?: string | null
           composite_figi?: string | null
+          country?: string | null
           created_at?: string
           currency?: string | null
           cusip?: string | null
           exchange?: string | null
           figi?: string | null
           id?: string
+          industry?: string | null
           isin?: string | null
           market_sector?: string | null
           name?: string | null
+          sector?: string | null
           security_type?: string | null
           sedol?: string | null
           share_class_figi?: string | null

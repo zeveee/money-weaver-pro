@@ -21,11 +21,23 @@ export interface LookupEntry {
   message: string | null;
 }
 
+export interface ClassificationInput {
+  sector: string | null;
+  industry: string | null;
+  country: string | null;
+  classificationSource: string;
+}
+
 export interface SecurityStore {
   /** Pesquisas já feitas, por chave `idType:idValue`. */
   getLookups(keys: string[]): Promise<Map<string, LookupEntry>>;
   /** Insere/atualiza a security (chave natural: FIGI) e devolve-a com id. */
   upsertSecurity(input: Omit<SecurityRecord, "id">, payload: unknown): Promise<SecurityRecord>;
+  /** Grava a classificação (setor/país) de uma security já identificada. */
+  updateClassification(
+    securityId: string,
+    input: ClassificationInput,
+  ): Promise<SecurityRecord>;
   /** Regista o resultado de uma pesquisa. */
   saveLookup(input: {
     idType: SecurityIdType;
@@ -58,6 +70,10 @@ const toRecord = (r: Row): SecurityRecord => ({
   securityType: (r["security_type"] as string | null) ?? null,
   marketSector: (r["market_sector"] as string | null) ?? null,
   source: (r["source"] as string | null) ?? "openfigi",
+  sector: (r["sector"] as string | null) ?? null,
+  industry: (r["industry"] as string | null) ?? null,
+  country: (r["country"] as string | null) ?? null,
+  classificationSource: (r["classification_source"] as string | null) ?? null,
 });
 
 /** Store real (Supabase, service role). */
@@ -119,6 +135,24 @@ export function createSupabaseSecurityStore(): SecurityStore {
       return toRecord(data as unknown as Row);
     },
 
+    async updateClassification(securityId, input) {
+      const db = await admin();
+      const { data, error } = await db
+        .from("securities")
+        .update({
+          sector: input.sector,
+          industry: input.industry,
+          country: input.country,
+          classification_source: input.classificationSource,
+          classified_at: new Date().toISOString(),
+        })
+        .eq("id", securityId)
+        .select("*")
+        .single();
+      if (error) throw new Error(error.message);
+      return toRecord(data as unknown as Row);
+    },
+
     async saveLookup(input) {
       const db = await admin();
       const { error } = await db.from("security_lookups").upsert(
@@ -158,6 +192,13 @@ export function createMemorySecurityStore(): SecurityStore {
       const rec: SecurityRecord = { ...input, id: existing?.id ?? crypto.randomUUID() };
       securities.set(key, rec);
       return rec;
+    },
+    async updateClassification(securityId, input) {
+      const found = [...securities.entries()].find(([, v]) => v.id === securityId);
+      if (!found) throw new Error(`Security ${securityId} não existe.`);
+      const next: SecurityRecord = { ...found[1], ...input };
+      securities.set(found[0], next);
+      return next;
     },
     async saveLookup(input) {
       lookups.set(lookupKey(input.idType, input.idValue), {

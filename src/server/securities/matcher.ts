@@ -89,6 +89,12 @@ function candidateToSecurity(
     securityType: c.securityType,
     marketSector: c.marketSector,
     source: SOURCE,
+    // Classificação (setor/país) é preenchida noutra fase, sobre a security
+    // já identificada — o matching não a produz nem a apaga.
+    sector: null,
+    industry: null,
+    country: null,
+    classificationSource: null,
   };
 }
 
@@ -114,6 +120,8 @@ export interface MatchOptions {
    * ser concluído numa passagem seguinte a partir do Security Master.
    */
   budgetMs?: number;
+  /** Desliga o enriquecimento setor/país (testes offline). */
+  enrich?: boolean;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -295,7 +303,26 @@ export async function matchHoldings(
     return fallback;
   });
 
+  // 4) Enriquecimento (setor/país) das securities identificadas que ainda não
+  //    têm classificação. Não altera o matching: só acrescenta informação à
+  //    security no catálogo global.
+  let classificationError: string | null = null;
+  const identifiedSecurities = new Map<string, SecurityRecord>();
+  for (const m of matches) {
+    if (m.status === "identified" && m.security) identifiedSecurities.set(m.security.id, m.security);
+  }
+  if (identifiedSecurities.size > 0 && options.enrich !== false) {
+    const { enrichSecurities } = await import("./classification");
+    const enriched = await enrichSecurities([...identifiedSecurities.values()], store);
+    classificationError = enriched.error;
+    for (const m of matches) {
+      const next = m.security ? enriched.updated.get(m.security.id) : undefined;
+      if (next) m.security = next;
+    }
+  }
+
   return {
+    classificationError,
     summary: {
       total: matches.length,
       identified: matches.filter((m) => m.status === "identified").length,

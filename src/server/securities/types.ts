@@ -35,6 +35,13 @@ export interface SecurityRecord {
   marketSector: string | null;
   /** Origem da informação (ex.: "openfigi"). */
   source: string;
+  /** Setor da empresa, tal como publicado pela fonte de classificação. */
+  sector: string | null;
+  industry: string | null;
+  /** País da empresa, tal como publicado pela fonte de classificação. */
+  country: string | null;
+  /** Fonte da classificação (null ⇒ ainda não classificada). */
+  classificationSource: string | null;
 }
 
 /**
@@ -77,5 +84,7 @@ export interface HoldingsMatchResult {
   pendingIdentifiers: number;
   /** Última falha da fonte externa, se existiu. */
   error: string | null;
+  /** Falha da fonte de classificação (setor/país), se existiu. */
+  classificationError: string | null;
 }
 

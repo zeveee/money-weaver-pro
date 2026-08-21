@@ -25,6 +25,7 @@ import { holdingKeyOf } from "@/lib/holding-key";
 import type { HoldingMatch } from "@/server/securities/types";
 import { listAllocationsForAssets } from "@/repositories/allocations";
 import { portfolioComposition } from "@/services/portfolio-composition";
+import { holdingsComposition } from "@/services/holdings-composition";
 import { formatPercent } from "@/lib/number-format";
 import { formatDateLabel } from "@/lib/date-format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,64 @@ const DIMENSIONS: { key: AllocationType; label: string }[] = [
   { key: "sector", label: "Setor" },
   { key: "geography", label: "Geografia" },
 ];
+
+/**
+ * Distribuição a partir das holdings identificadas: os pesos publicados pela
+ * fonte são agregados pelo setor/país da security no Security Master. Sem
+ * classificação na fonte ⇒ "Não classificado" (nunca inferimos).
+ */
+function HoldingsDistribution({
+  holdings,
+  matchesByKey,
+  dimension,
+  pending,
+}: {
+  holdings: { holdingName: string; holdingTicker: string | null; weightPercent: number | null }[];
+  matchesByKey: Map<string, HoldingMatch>;
+  dimension: AllocationType;
+  pending: boolean;
+}) {
+  const classificationByHolding = new Map(
+    holdings.map((h) => {
+      const key = holdingKeyOf(h as never);
+      const sec = matchesByKey.get(key)?.security ?? null;
+      return [key, { sector: sec?.sector ?? null, country: sec?.country ?? null }];
+    }),
+  );
+
+  const slices = holdingsComposition({
+    holdings: holdings.map((h) => ({
+      holdingKey: holdingKeyOf(h as never),
+      weightPercent: h.weightPercent,
+    })),
+    classificationByHolding,
+    dimension: dimension === "sector" ? "sector" : "geography",
+  });
+
+  if (slices.length === 0) {
+    return <p className="text-sm text-muted-foreground">Distribuição não disponível.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {pending ? (
+        <p className="text-xs text-muted-foreground">
+          Ainda há holdings por identificar — a distribuição vai sendo atualizada.
+        </p>
+      ) : null}
+      <ul className="space-y-2">
+        {slices.map((s) => (
+          <li key={s.allocationName} className="flex items-center justify-between gap-4 text-sm">
+            <span className={s.isUnclassified ? "text-muted-foreground" : undefined}>
+              {s.allocationName}
+            </span>
+            <span className="tabular-nums">{formatPercent(s.percentage / 100)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function DistributionList({
   asset,
@@ -282,7 +341,16 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
 
           {DIMENSIONS.map((d) => (
             <TabsContent key={d.key} value={d.key} className="mt-4">
-              <DistributionList asset={asset} dimension={d.key} />
+              {matchesByKey ? (
+                <HoldingsDistribution
+                  holdings={snap.holdings}
+                  matchesByKey={matchesByKey}
+                  dimension={d.key}
+                  pending={(matchData?.status === "ok" && matchData.summary.pending > 0) || matching}
+                />
+              ) : (
+                <DistributionList asset={asset} dimension={d.key} />
+              )}
             </TabsContent>
           ))}
         </Tabs>
