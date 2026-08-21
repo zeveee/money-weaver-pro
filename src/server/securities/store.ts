@@ -97,23 +97,41 @@ export function createSupabaseSecurityStore(): SecurityStore {
       const db = await admin();
       const { data, error } = await db
         .from("security_lookups")
-        .select(
-          "lookup_key, status, candidate_count, source, message, securities:security_id (*)",
-        )
+        .select("lookup_key, status, candidate_count, source, message")
         .in("lookup_key", keys);
       if (error) throw new Error(error.message);
-      for (const row of (data ?? []) as unknown as Row[]) {
+
+      // Conjunto acumulado de candidatos por identificador.
+      const { data: cands, error: candErr } = await db
+        .from("security_lookup_candidates")
+        .select("lookup_key, securities:security_id (*)")
+        .in("lookup_key", keys);
+      if (candErr) throw new Error(candErr.message);
+
+      const byKey = new Map<string, SecurityRecord[]>();
+      for (const row of (cands ?? []) as unknown as Row[]) {
         const sec = row["securities"] as Row | null;
-        out.set(String(row["lookup_key"]), {
-          status: row["status"] as SecurityMatchStatus,
-          security: sec ? toRecord(sec) : null,
-          candidateCount: Number(row["candidate_count"] ?? 0),
+        if (!sec) continue;
+        const k = String(row["lookup_key"]);
+        const list = byKey.get(k) ?? [];
+        list.push(toRecord(sec));
+        byKey.set(k, list);
+      }
+
+      for (const row of (data ?? []) as unknown as Row[]) {
+        const key = String(row["lookup_key"]);
+        const candidates = byKey.get(key) ?? [];
+        out.set(key, {
+          status: candidates.length > 0 ? "identified" : "unidentified",
+          candidates,
+          candidateCount: candidates.length,
           source: String(row["source"] ?? "openfigi"),
           message: (row["message"] as string | null) ?? null,
         });
       }
       return out;
     },
+
 
     async upsertSecurity(input, payload) {
       const db = await admin();
