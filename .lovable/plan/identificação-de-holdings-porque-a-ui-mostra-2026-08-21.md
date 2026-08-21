@@ -28,7 +28,10 @@ Com a mensagem de erro visível e o log, confirmar se é timeout do pedido, erro
 Se se confirmar o timeout/pedido demasiado longo — correção prevista:
 
 - O `getAssetHoldingMatches` deixa de fazer todo o trabalho num pedido: passa a trabalhar por orçamento de tempo. Resolve o que couber (os lotes já gravam no Security Master à medida que avançam) e devolve o que já sabe mais `pending: n`.
-- A UI, enquanto houver `pending > 0`, volta a pedir automaticamente (a cache do Security Master faz cada passagem começar onde a anterior parou), mostrando "a identificar X de Y". Ao fim, fica estável e as passagens seguintes são instantâneas (leitura do Security Master, sem OpenFIGI).
+- A UI, enquanto houver `pending > 0`, volta a pedir automaticamente (a cache do Security Master faz cada passagem começar onde a anterior parou), mostrando "a identificar X de Y". Ao fim, fica estável e as passagens seguintes são instantâneas (leitura do Security Master, sem OpenFIGI).  
+  
+  
+Garante que o processamento parcial não cria estados inconsistentes: cada holding só deve ser apresentada como `Identificada` depois de o respetivo resultado ter sido efetivamente persistido no Security Master, e erros/timeout não devem ser gravados como `Não identificada`.
 
 Se o erro for de escrita/leitura no Supabase, a correção é nessa camada (`src/server/securities/store.ts`), mantendo o matcher intacto.
 
