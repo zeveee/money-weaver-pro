@@ -25,6 +25,7 @@ import { holdingKeyOf } from "@/lib/holding-key";
 import type { HoldingMatch } from "@/server/securities/types";
 import { listAllocationsForAssets } from "@/repositories/allocations";
 import { portfolioComposition } from "@/services/portfolio-composition";
+import { holdingsComposition } from "@/services/holdings-composition";
 import { formatPercent } from "@/lib/number-format";
 import { formatDateLabel } from "@/lib/date-format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -340,7 +341,16 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
 
           {DIMENSIONS.map((d) => (
             <TabsContent key={d.key} value={d.key} className="mt-4">
-              <DistributionList asset={asset} dimension={d.key} />
+              {matchesByKey ? (
+                <HoldingsDistribution
+                  holdings={snap.holdings}
+                  matchesByKey={matchesByKey}
+                  dimension={d.key}
+                  pending={(matchData?.status === "ok" && matchData.summary.pending > 0) || matching}
+                />
+              ) : (
+                <DistributionList asset={asset} dimension={d.key} />
+              )}
             </TabsContent>
           ))}
         </Tabs>
