@@ -84,5 +84,7 @@ export interface HoldingsMatchResult {
   pendingIdentifiers: number;
   /** Última falha da fonte externa, se existiu. */
   error: string | null;
+  /** Falha da fonte de classificação (setor/país), se existiu. */
+  classificationError: string | null;
 }
 

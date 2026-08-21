@@ -120,6 +120,8 @@ export interface MatchOptions {
    * ser concluído numa passagem seguinte a partir do Security Master.
    */
   budgetMs?: number;
+  /** Desliga o enriquecimento setor/país (testes offline). */
+  enrich?: boolean;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
