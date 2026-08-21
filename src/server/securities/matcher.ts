@@ -66,8 +66,8 @@ export function holdingIdentifiers(h: NormalizedHolding): HoldingIdentifiers[] {
   return out;
 }
 
-export const holdingKeyOf = (h: NormalizedHolding): string =>
-  clean(h.cusip) ?? clean(h.holdingTicker) ?? h.holdingName.trim().toUpperCase();
+/** Reexportada para o servidor; a definição é partilhada com a UI. */
+export { holdingKeyOf };
 
 function candidateToSecurity(
   c: FigiCandidate,
