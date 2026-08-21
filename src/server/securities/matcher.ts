@@ -169,66 +169,78 @@ export async function matchHoldings(
       const cands = res.data[j] ?? [];
       const key = lookupKey(ident.idType, ident.idValue);
 
-      if (cands.length === 0) {
-        known.set(key, {
-          status: "unidentified",
-          security: null,
-          candidateCount: 0,
+      // Regra: só damos um resultado por assente DEPOIS de estar persistido no
+      // Security Master. Se a gravação falhar, o identificador fica pendente.
+      try {
+        if (cands.length === 0) {
+          await store.saveLookup({
+            ...ident,
+            status: "unidentified",
+            securityId: null,
+            candidateCount: 0,
+            source: SOURCE,
+            message: null,
+          });
+          known.set(key, {
+            status: "unidentified",
+            security: null,
+            candidateCount: 0,
+            source: SOURCE,
+            message: null,
+          });
+          unresolved.delete(key);
+          continue;
+        }
+
+        const n = distinctCount(cands);
+        if (n > 1) {
+          const message = `${n} candidatos distintos no OpenFIGI.`;
+          await store.saveLookup({
+            ...ident,
+            status: "ambiguous",
+            securityId: null,
+            candidateCount: n,
+            source: SOURCE,
+            message,
+          });
+          known.set(key, {
+            status: "ambiguous",
+            security: null,
+            candidateCount: n,
+            source: SOURCE,
+            message,
+          });
+          unresolved.delete(key);
+          continue;
+        }
+
+        const primary = pickPrimary(cands);
+        const security = await store.upsertSecurity(
+          candidateToSecurity(primary, ident, options.currency ?? null),
+          { openfigi: primary },
+        );
+        await store.saveLookup({
+          ...ident,
+          status: "identified",
+          securityId: security.id,
+          candidateCount: 1,
           source: SOURCE,
           message: null,
         });
-        await store.saveLookup({
-          ...ident,
-          status: "unidentified",
-          securityId: null,
-          candidateCount: 0,
+        known.set(key, {
+          status: "identified",
+          security,
+          candidateCount: 1,
           source: SOURCE,
           message: null,
         });
-        continue;
+        unresolved.delete(key);
+      } catch (e) {
+        // Erro de persistência: não inventamos estado, fica pendente.
+        lastError = `Security Master: ${(e as Error).message}`;
       }
-
-      const n = distinctCount(cands);
-      if (n > 1) {
-        known.set(key, {
-          status: "ambiguous",
-          security: null,
-          candidateCount: n,
-          source: SOURCE,
-          message: `${n} candidatos distintos no OpenFIGI.`,
-        });
-        await store.saveLookup({
-          ...ident,
-          status: "ambiguous",
-          securityId: null,
-          candidateCount: n,
-          source: SOURCE,
-          message: `${n} candidatos distintos no OpenFIGI.`,
-        });
-        continue;
-      }
-
-      const primary = pickPrimary(cands);
-      const security = await store.upsertSecurity(
-        candidateToSecurity(primary, ident, options.currency ?? null),
-        { openfigi: primary },
-      );
-      known.set(key, {
-        status: "identified",
-        security,
-        candidateCount: 1,
-        source: SOURCE,
-        message: null,
-      });
-      await store.saveLookup({
-        ...ident,
-        status: "identified",
-        securityId: security.id,
-        candidateCount: 1,
-        source: SOURCE,
-        message: null,
-      });
     }
+
 
     if (offset + FIGI_BATCH_SIZE < pending.length) await sleep(delay);
   }
