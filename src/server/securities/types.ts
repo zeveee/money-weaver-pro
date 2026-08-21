@@ -61,11 +61,14 @@ export interface HoldingMatch {
   security: SecurityRecord | null;
   /** Identificador que produziu o resultado (null quando não houve nenhum utilizável). */
   matchedBy: SecurityIdType | null;
-  /** Nº de candidatos devolvidos pela fonte (>1 ⇒ ambígua). */
+  /** Nº de candidatos distintos considerados (>1 sem desempate ⇒ ambígua). */
   candidateCount: number;
   /** Origem da identificação: "security_master" (cache) ou "openfigi". */
   source: string;
+  /** Motivo do desempate pelo contexto (moeda, ticker, nome, …). */
+  reason: string | null;
   message: string | null;
+
 }
 
 export interface HoldingsMatchSummary {

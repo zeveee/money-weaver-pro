@@ -974,6 +974,42 @@ export type Database = {
         }
         Relationships: []
       }
+      security_lookup_candidates: {
+        Row: {
+          first_seen_at: string
+          id: string
+          lookup_key: string
+          security_id: string
+        }
+        Insert: {
+          first_seen_at?: string
+          id?: string
+          lookup_key: string
+          security_id: string
+        }
+        Update: {
+          first_seen_at?: string
+          id?: string
+          lookup_key?: string
+          security_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_lookup_candidates_lookup_key_fkey"
+            columns: ["lookup_key"]
+            isOneToOne: false
+            referencedRelation: "security_lookups"
+            referencedColumns: ["lookup_key"]
+          },
+          {
+            foreignKeyName: "security_lookup_candidates_security_id_fkey"
+            columns: ["security_id"]
+            isOneToOne: false
+            referencedRelation: "securities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_lookups: {
         Row: {
           candidate_count: number
