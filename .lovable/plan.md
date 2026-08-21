@@ -58,14 +58,15 @@ candidatos do identificador  ->  scoring por contexto  ->  decisão
 | Exchange / exchCode | Sinal de contexto quando a holding o declara; nunca elimina um candidato (a mesma security tem vários listings). |
 | Ticker | Sinal forte de desempate; fraco como identificador isolado (colide entre bolsas) — mantém-se como último recurso na fase de lookup. |
 | Nome | Desempate por semelhança normalizada; nunca decide sozinho. |
-| securityType / marketSector | Coerência (equity vs fund vs ETP); despenaliza/elimina candidatos de classe errada. |
+| securityType / marketSector | Coerência (equity vs fund vs ETP); penaliza candidatos de classe errada no scoring. |
 | compositeFIGI | Agrupa a mesma empresa em várias bolsas — continua a definir "candidatos distintos". |
 | shareClassFIGI | Deteta classes/moedas diferentes do mesmo fundo: mesmo shareClassFIGI + composite diferente ⇒ é aqui que o contexto tem de decidir, não o ISIN. |
 
 ## 5. Impacto técnico
 
-- Migração: `security_lookups` ganha `candidate_security_ids uuid[]` (ou tabela de junção `security_lookup_candidates`); `status` reinterpretado. Lookups existentes continuam válidos como cache de 1 candidato.
-- `store.ts`: `saveLookup`/`getLookups` passam a lidar com N candidatos; `upsertSecurity` passa a ser chamado para todos os candidatos.
+- Migração: relação candidatos ↔ lookup (tabela de junção `security_lookup_candidates`, preferível a um array por permitir união incremental e histórico de quando cada candidato apareceu); `status` reinterpretado. Lookups existentes migram como cache de 1 candidato.
+- `store.ts`: `saveLookup`/`getLookups` passam a lidar com N candidatos e a fazer **união** em vez de substituição; `upsertSecurity` passa a ser chamado para todos os candidatos.
+
 - Novo ficheiro `src/server/securities/select.ts` — função pura `selectCandidate(holding, candidates)` com testes unitários (inclui o caso WisdomTree: dois candidatos, mesmo ISIN, moedas diferentes).
 - `matcher.ts`: deixa de decidir na fase de lote; passa a decidir na fase 3 (por holding), usando `select.ts`.
 - UI: sem alterações obrigatórias; opcionalmente mostrar o motivo do desempate no tooltip do badge.
