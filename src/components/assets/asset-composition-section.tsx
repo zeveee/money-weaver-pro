@@ -150,12 +150,14 @@ function MatchBadge({ match, loading }: { match?: HoldingMatch; loading: boolean
     );
   }
   if (match.status === "identified") {
+    const title = [match.security?.name, match.reason].filter(Boolean).join(" — ");
     return (
-      <Badge variant="secondary" title={match.security?.name ?? undefined}>
+      <Badge variant="secondary" title={title || undefined}>
         Identificada
       </Badge>
     );
   }
+
   if (match.status === "ambiguous") {
     return (
       <Badge variant="outline" title={match.message ?? undefined}>
