@@ -231,9 +231,14 @@ export async function matchHoldings(
   const matches: HoldingMatch[] = holdings.map((h, index) => {
     const holdingKey = holdingKeyOf(h);
     const candidates = idents[index] ?? [];
+    // Se algum identificador ficou por consultar, a holding está pendente —
+    // nunca "não identificada" (isso seria esconder trabalho por fazer).
+    const stillPending = candidates.some((i) =>
+      unresolved.has(lookupKey(i.idType, i.idValue)),
+    );
     let fallback: HoldingMatch = {
       holdingKey,
-      status: "unidentified",
+      status: stillPending ? "pending" : "unidentified",
       security: null,
       matchedBy: null,
       candidateCount: 0,
