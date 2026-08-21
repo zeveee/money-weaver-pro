@@ -182,21 +182,53 @@ export function createSupabaseSecurityStore(): SecurityStore {
 
     async saveLookup(input) {
       const db = await admin();
+      const key = lookupKey(input.idType, input.idValue);
+
+      // 1) A linha do lookup tem de existir (é o alvo da FK dos candidatos).
       const { error } = await db.from("security_lookups").upsert(
         {
-          lookup_key: lookupKey(input.idType, input.idValue),
+          lookup_key: key,
           id_type: input.idType,
           id_value: input.idValue,
-          status: input.status,
-          security_id: input.securityId,
-          candidate_count: input.candidateCount,
+          status: input.candidateIds.length > 0 ? "identified" : "unidentified",
+          security_id: null,
+          candidate_count: input.candidateIds.length,
           source: input.source,
           message: input.message,
         },
         { onConflict: "lookup_key" },
       );
       if (error) throw new Error(error.message);
+
+      if (input.candidateIds.length === 0) return;
+
+      // 2) União: candidatos novos acrescentam-se, os existentes ficam.
+      const { error: insErr } = await db
+        .from("security_lookup_candidates")
+        .upsert(
+          input.candidateIds.map((securityId) => ({
+            lookup_key: key,
+            security_id: securityId,
+          })),
+          { onConflict: "lookup_key,security_id", ignoreDuplicates: true },
+        );
+      if (insErr) throw new Error(insErr.message);
+
+      // 3) `candidate_count` reflete sempre o conjunto acumulado.
+      const { count, error: cntErr } = await db
+        .from("security_lookup_candidates")
+        .select("id", { count: "exact", head: true })
+        .eq("lookup_key", key);
+      if (cntErr) throw new Error(cntErr.message);
+      if (typeof count === "number" && count !== input.candidateIds.length) {
+        const { error: updErr } = await db
+          .from("security_lookups")
+          .update({ candidate_count: count })
+          .eq("lookup_key", key);
+        if (updErr) throw new Error(updErr.message);
+      }
     },
+
   };
 }
 
