@@ -212,7 +212,27 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
             {snap.sourceProvider}
           </a>
         </p>
+        {matchProblem ? (
+          <p className="text-xs text-destructive">
+            Identificação das holdings falhou: {matchProblem}{" "}
+            <button
+              type="button"
+              className="underline hover:no-underline"
+              onClick={() => void refetchMatches()}
+            >
+              Tentar novamente
+            </button>
+          </p>
+        ) : matchData?.status === "ok" ? (
+          <p className="text-xs text-muted-foreground">
+            Identificação: {matchData.summary.identified} identificadas ·{" "}
+            {matchData.summary.ambiguous} ambíguas · {matchData.summary.unidentified} não
+            identificadas
+            {matchData.summary.pending > 0 ? ` · ${matchData.summary.pending} a identificar…` : ""}
+          </p>
+        ) : null}
       </CardHeader>
+
       <CardContent>
         <Tabs defaultValue="holdings">
           <TabsList>
