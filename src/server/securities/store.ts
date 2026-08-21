@@ -58,6 +58,10 @@ const toRecord = (r: Row): SecurityRecord => ({
   securityType: (r["security_type"] as string | null) ?? null,
   marketSector: (r["market_sector"] as string | null) ?? null,
   source: (r["source"] as string | null) ?? "openfigi",
+  sector: (r["sector"] as string | null) ?? null,
+  industry: (r["industry"] as string | null) ?? null,
+  country: (r["country"] as string | null) ?? null,
+  classificationSource: (r["classification_source"] as string | null) ?? null,
 });
 
 /** Store real (Supabase, service role). */
