@@ -277,7 +277,10 @@ export async function matchHoldings(
       identified: matches.filter((m) => m.status === "identified").length,
       ambiguous: matches.filter((m) => m.status === "ambiguous").length,
       unidentified: matches.filter((m) => m.status === "unidentified").length,
+      pending: matches.filter((m) => m.status === "pending").length,
     },
     matches,
+    pendingIdentifiers: unresolved.size,
+    error: lastError,
   };
 }
