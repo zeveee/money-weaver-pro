@@ -11,6 +11,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const input = z.object({ assetId: z.string().uuid() });
 
+/** Tempo máximo gasto em chamadas externas por pedido (o resto fica pendente). */
+const BUDGET_MS = 12_000;
+
 /**
  * Identifica as holdings do ativo contra o Security Master (OpenFIGI como
  * primeira fonte externa). Devolve o estado por holding + resumo.
