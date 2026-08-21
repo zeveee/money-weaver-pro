@@ -245,8 +245,12 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
                         {h.weightPercent == null ? "—" : formatPercent(h.weightPercent / 100)}
                       </td>
                       <td className="py-2 pl-3">
-                        <MatchBadge match={matches?.[i]} loading={matching} />
+                        <MatchBadge
+                          match={matchesByKey?.get(holdingKeyOf(h))}
+                          loading={matching || matchFetching}
+                        />
                       </td>
+
                     </tr>
                   ))}
                 </tbody>
