@@ -135,6 +135,7 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
     enabled: data?.status === "ok",
     staleTime: 30 * 60 * 1000,
     retry: false,
+    refetchIntervalInBackground: true,
     refetchInterval: (q) => {
       const r = q.state.data;
       // Só continuamos enquanto houver pendentes E não houver erro da fonte.
