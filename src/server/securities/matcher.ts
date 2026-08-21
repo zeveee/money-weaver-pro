@@ -301,7 +301,26 @@ export async function matchHoldings(
     return fallback;
   });
 
+  // 4) Enriquecimento (setor/país) das securities identificadas que ainda não
+  //    têm classificação. Não altera o matching: só acrescenta informação à
+  //    security no catálogo global.
+  let classificationError: string | null = null;
+  const identifiedSecurities = new Map<string, SecurityRecord>();
+  for (const m of matches) {
+    if (m.status === "identified" && m.security) identifiedSecurities.set(m.security.id, m.security);
+  }
+  if (identifiedSecurities.size > 0 && options.enrich !== false) {
+    const { enrichSecurities } = await import("./classification");
+    const enriched = await enrichSecurities([...identifiedSecurities.values()], store);
+    classificationError = enriched.error;
+    for (const m of matches) {
+      const next = m.security ? enriched.updated.get(m.security.id) : undefined;
+      if (next) m.security = next;
+    }
+  }
+
   return {
+    classificationError,
     summary: {
       total: matches.length,
       identified: matches.filter((m) => m.status === "identified").length,
