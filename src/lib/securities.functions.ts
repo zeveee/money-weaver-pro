@@ -19,30 +19,59 @@ export const getAssetHoldingMatches = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => input.parse(raw))
   .handler(async ({ data, context }) => {
-    const { getHoldings } = await import("@/server/holdings/registry");
-    const { matchHoldings } = await import("@/server/securities/matcher");
+    const started = Date.now();
+    try {
+      const { getHoldings } = await import("@/server/holdings/registry");
+      const { matchHoldings } = await import("@/server/securities/matcher");
 
-    const { data: asset, error } = await context.supabase
-      .from("assets")
-      .select("id, name, ticker, isin, metadata")
-      .eq("id", data.assetId)
-      .maybeSingle();
+      const { data: asset, error } = await context.supabase
+        .from("assets")
+        .select("id, name, ticker, isin, metadata")
+        .eq("id", data.assetId)
+        .maybeSingle();
 
-    if (error) return { status: "error" as const, message: error.message };
-    if (!asset?.ticker) return { status: "unavailable" as const };
+      if (error) return { status: "error" as const, message: `Ativo: ${error.message}` };
+      if (!asset) return { status: "error" as const, message: "Ativo não encontrado." };
+      if (!asset.ticker) {
+        return {
+          status: "unavailable" as const,
+          message: "O ativo não tem ticker — não é possível identificar as holdings.",
+        };
+      }
 
-    const metadata = (asset.metadata ?? {}) as Record<string, unknown>;
-    const issuerRaw = metadata["issuer"] ?? metadata["manager"];
-    const issuer = typeof issuerRaw === "string" && issuerRaw.trim() !== "" ? issuerRaw : null;
+      const metadata = (asset.metadata ?? {}) as Record<string, unknown>;
+      const issuerRaw = metadata["issuer"] ?? metadata["manager"];
+      const issuer =
+        typeof issuerRaw === "string" && issuerRaw.trim() !== "" ? issuerRaw : null;
 
-    const res = await getHoldings({
-      ticker: asset.ticker,
-      issuer,
-      name: asset.name,
-      isin: asset.isin,
-    });
-    if (!res.ok) return { status: "unavailable" as const };
+      const res = await getHoldings({
+        ticker: asset.ticker,
+        issuer,
+        name: asset.name,
+        isin: asset.isin,
+      });
+      if (!res.ok) {
+        return { status: "unavailable" as const, message: res.message };
+      }
 
-    const matched = await matchHoldings(res.data.holdings);
-    return { status: "ok" as const, ...matched };
+      // Orçamento de tempo: cada passagem resolve o que couber e persiste-o;
+      // o que ficar pendente é concluído na passagem seguinte (a partir do
+      // Security Master, já sem repetir chamadas externas).
+      const matched = await matchHoldings(res.data.holdings, { budgetMs: BUDGET_MS });
+
+      console.log(
+        `[securities] asset=${asset.ticker} holdings=${matched.summary.total} ` +
+          `identificadas=${matched.summary.identified} ambíguas=${matched.summary.ambiguous} ` +
+          `não=${matched.summary.unidentified} pendentes=${matched.summary.pending} ` +
+          `idsPendentes=${matched.pendingIdentifiers} ms=${Date.now() - started}` +
+          (matched.error ? ` erro=${matched.error}` : ""),
+      );
+
+      return { status: "ok" as const, ...matched };
+    } catch (e) {
+      const message = (e as Error).message ?? "Erro desconhecido.";
+      console.error(`[securities] falha ao identificar holdings: ${message}`);
+      return { status: "error" as const, message };
+    }
   });
+
