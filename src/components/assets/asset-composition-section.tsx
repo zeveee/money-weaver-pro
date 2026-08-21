@@ -82,10 +82,10 @@ function DistributionList({
 
 /** Estado da identificação de uma holding contra o Security Master global. */
 function MatchBadge({ match, loading }: { match?: HoldingMatch; loading: boolean }) {
-  if (!match) {
+  if (!match || match.status === "pending") {
     return (
       <span className="text-xs text-muted-foreground">
-        {loading ? "A identificar…" : "—"}
+        {loading || match?.status === "pending" ? "A identificar…" : "—"}
       </span>
     );
   }
@@ -118,13 +118,42 @@ export function AssetCompositionSection({ asset }: { asset: Asset }) {
   });
 
   // Identificação das holdings (Security Master + OpenFIGI), em segundo plano.
-  const { data: matchData, isLoading: matching } = useQuery({
+  // Cada passagem tem orçamento de tempo: enquanto houver pendentes e houver
+  // progresso, voltamos a pedir — a passagem seguinte arranca do Security
+  // Master, sem repetir chamadas externas.
+  const {
+    data: matchData,
+    isLoading: matching,
+    isFetching: matchFetching,
+    isError: matchFailed,
+    error: matchError,
+    refetch: refetchMatches,
+  } = useQuery({
     queryKey: ["asset-holding-matches", asset.id],
     queryFn: () => getAssetHoldingMatches({ data: { assetId: asset.id } }),
     enabled: data?.status === "ok",
     staleTime: 30 * 60 * 1000,
+    retry: false,
+    refetchInterval: (q) => {
+      const r = q.state.data;
+      // Só continuamos enquanto houver pendentes E não houver erro da fonte.
+      return r && r.status === "ok" && r.pendingIdentifiers > 0 && !r.error ? 1_000 : false;
+    },
   });
-  const matches = matchData?.status === "ok" ? matchData.matches : undefined;
+
+  const matchesByKey =
+    matchData?.status === "ok"
+      ? new Map(matchData.matches.map((m) => [m.holdingKey, m]))
+      : undefined;
+  const matchProblem =
+    matchFailed
+      ? ((matchError as Error | null)?.message ?? "Falha ao contactar o servidor.")
+      : matchData && matchData.status !== "ok"
+        ? matchData.message
+        : matchData?.status === "ok" && matchData.error
+          ? matchData.error
+          : null;
+
 
   if (isLoading) {
     return (
