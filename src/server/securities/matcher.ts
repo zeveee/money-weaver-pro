@@ -107,6 +107,12 @@ export interface MatchOptions {
   currency?: string | null;
   /** Pausa entre lotes OpenFIGI (limite ~25 pedidos/min sem chave). */
   batchDelayMs?: number;
+  /**
+   * Orçamento de tempo para consultas externas. Ao esgotar, devolvemos o que
+   * já foi resolvido (e persistido) e deixamos o resto como `pending`, para
+   * ser concluído numa passagem seguinte a partir do Security Master.
+   */
+  budgetMs?: number;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -118,8 +124,10 @@ export async function matchHoldings(
   const store = options.store ?? createSupabaseSecurityStore();
   const exchCode = options.tickerExchCode ?? "US";
   const delay = options.batchDelayMs ?? 300;
+  const deadline = options.budgetMs ? Date.now() + options.budgetMs : null;
 
   const idents = holdings.map(holdingIdentifiers);
+  let lastError: string | null = null;
 
   // 1) Memória do Security Master para todos os identificadores em jogo.
   const allKeys = [...new Set(idents.flat().map((i) => lookupKey(i.idType, i.idValue)))];
@@ -133,8 +141,12 @@ export async function matchHoldings(
       pending.push(i);
     }
   }
+  /** Identificadores que ficam por resolver nesta passagem. */
+  const unresolved = new Set(pending.map((i) => lookupKey(i.idType, i.idValue)));
 
   for (let offset = 0; offset < pending.length; offset += FIGI_BATCH_SIZE) {
+    if (deadline && Date.now() >= deadline) break;
+
     const batch = pending.slice(offset, offset + FIGI_BATCH_SIZE);
     const jobs: FigiJob[] = batch.map((i) =>
       i.idType === "ticker"
@@ -144,19 +156,13 @@ export async function matchHoldings(
 
     const res = await figiMapping(jobs);
     if (!res.ok) {
-      // Falha transitória da fonte: não gravamos nada (não é "não identificada").
-      for (const i of batch) {
-        known.set(lookupKey(i.idType, i.idValue), {
-          status: "unidentified",
-          security: null,
-          candidateCount: 0,
-          source: SOURCE,
-          message: res.message,
-        });
-      }
+      // Falha transitória da fonte: nada é gravado e os identificadores
+      // continuam pendentes (não são "não identificados").
+      lastError = res.message;
       if (res.reason === "rate_limit") await sleep(2_000);
       continue;
     }
+
 
     for (let j = 0; j < batch.length; j++) {
       const ident = batch[j]!;
