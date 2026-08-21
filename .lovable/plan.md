@@ -18,10 +18,12 @@ Sim. Uma holding nova com o mesmo ISIN mas contexto diferente (outra moeda, outr
 
 A ideia central: **a memória de pesquisa passa a ser sobre candidatos, não sobre a decisão**. A decisão passa a ser função de (candidatos + contexto da holding).
 
-### 3.1 Separar "o que a fonte devolveu" de "o que decidimos"
+### 3.1 O lookup é cache do CONJUNTO de candidatos da fonte
 
-- `security_lookups` deixa de guardar `security_id` como verdade única e passa a guardar o conjunto de candidatos da última consulta ao OpenFIGI (`candidate_security_ids`, mais `candidate_count` já existente). Ou seja: cache do resultado da fonte externa, não da associação.
-- Todos os candidatos passam a ser gravados em `securities` (o catálogo continua global e por FIGI — nada se perde, o que aparece é mais do que uma linha por ISIN quando o ISIN é mesmo partilhado).
+- `security_lookups` deixa de guardar `security_id` como verdade única e passa a guardar o conjunto de candidatos devolvidos pela fonte externa para aquele identificador. Ou seja: cache do resultado da fonte, não da associação.
+- O conjunto é **acumulativo, por união**: uma consulta posterior ao mesmo identificador que traga um candidato ainda não conhecido acrescenta-o ao conjunto existente (chave natural FIGI), sem apagar os anteriores. `candidate_count` passa a refletir o conjunto acumulado.
+- Todos os candidatos — não só o vencedor — são gravados em `securities`. O catálogo continua global e por FIGI; passa apenas a poder ter mais do que uma linha para o mesmo ISIN, que é precisamente o caso WisdomTree.
+- Consequência prática: quando o conjunto em cache não explica bem a holding (nenhum candidato compatível com o contexto, ou o identificador nunca foi revisitado desde uma versão anterior da lógica), o matcher pode reconsultar a fonte e fazer união — a cache acelera, nunca fecha a porta à descoberta.
 - `status` do lookup passa a descrever a fonte (`resolved` com N candidatos / `unidentified`), não a conclusão sobre uma holding.
 
 ### 3.2 Chave de lookup mais fina (opcional, mas recomendada)
@@ -30,20 +32,22 @@ Manter `lookup_key` por identificador para efeitos de cache da fonte, e acrescen
 
 ### 3.3 Nova etapa: seleção por contexto
 
-Depois de obter os candidatos (cache ou OpenFIGI), o matcher aplica um scoring por holding:
+Depois de obter os candidatos (cache acumulada ou nova consulta), o matcher decide por holding:
 
 ```text
-candidatos do ISIN  ->  filtro duro  ->  scoring  ->  decisão
+candidatos do identificador  ->  scoring por contexto  ->  decisão
 ```
 
-- **Filtro duro** (elimina candidatos): currency da holding ≠ currency do candidato (quando ambas conhecidas); exchange incompatível quando a holding a declara.
-- **Scoring** (ordena os sobreviventes): igualdade de ticker (+forte), semelhança do nome normalizado, `securityType`/`marketSector` coerentes com a linha, preferência por candidato cujo `figi == compositeFigi`.
-- **Decisão**: exatamente 1 sobrevivente, ou um líder claro por margem mínima ⇒ `identified`; empate ⇒ `ambiguous` (nunca escolher ao acaso); 0 sobreviventes ⇒ tenta o identificador seguinte e, no fim, `unidentified`.
-- Passa a registar-se em `HoldingMatch` o motivo (`matchedBy` + os atributos que desempataram), para a UI e para depuração.
+- **Sem filtros duros universais.** Currency e exchange são contexto de matching, não eliminatórias: a mesma security tem legitimamente vários listings e moedas. Entram no scoring com peso alto (a coincidência de moeda favorece fortemente um candidato), mas uma divergência de moeda ou de bolsa nunca elimina sozinha um candidato válido.
+- **Scoring**: igualdade de ticker, coincidência de currency, coincidência de exchange, semelhança do nome normalizado, coerência de `securityType`/`marketSector`, preferência por candidato cujo `figi == compositeFigi`.
+- **Decisão**: um líder claro por margem mínima ⇒ `identified`; candidato único ⇒ `identified`; empate ou margem insuficiente entre candidatos distintos ⇒ `ambiguous` (nunca escolher ao acaso); nenhum candidato ⇒ tenta o identificador seguinte e, no fim, `unidentified`.
+- Nota sobre um único candidato: quando só existe um e o contexto o contradiz (ex.: moeda diferente), continua a ser `identified` — mas o motivo do desempate fica registado, para não escondermos a divergência.
+- Passa a registar-se em `HoldingMatch` o motivo (`matchedBy` + atributos que desempataram), para a UI e para depuração.
 
 ### 3.4 Contexto da holding disponível
 
-`NormalizedHolding` já traz `holdingName`, `holdingTicker`, `cusip`, `currency`. A currency por linha é o sinal mais valioso e hoje é ignorada: passa a ser passada ao matcher por holding, com fallback para a moeda base do snapshot.
+`NormalizedHolding` já traz `holdingName`, `holdingTicker`, `cusip`, `currency`. A currency por linha é hoje ignorada na decisão: passa a ser passada ao matcher por holding, com fallback para a moeda base do snapshot.
+
 
 ## 4. Como usar cada atributo
 
